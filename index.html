@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Australien Reiseplan</title>
+<meta name="theme-color" content="#1F3A3D">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root{
+    --bg:#F5EEE3; --card:#FFFDF9; --ink:#2A221C; --muted:#7A6A5C; --line:#E6DACA;
+    --deep:#1F3A3D; --ochre:#B8461F; --ochre-soft:#F6DDD0; --sun:#F6C453;
+    --green:#3E7C59; --green-soft:#DCEFE3; --warn:#A15C00; --warn-soft:#FBEBCF;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+  button,input,select,textarea{font:inherit;color:inherit}
+  header{background:var(--deep);color:#F5EEE3;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;position:sticky;top:0;z-index:5}
+  header h1{margin:0;font-size:1.25rem;letter-spacing:.01em}
+  header .sub{font-size:.9rem;opacity:.85;margin-top:2px}
+  main{padding:12px 16px calc(96px + env(safe-area-inset-bottom));max-width:720px;margin:0 auto}
+  nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
+    display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+  nav button{background:none;border:0;padding:9px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.75rem;color:var(--muted)}
+  nav button svg{width:24px;height:24px}
+  nav button[aria-current="page"]{color:var(--ochre);font-weight:600}
+  .badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--ochre);color:#fff;font-size:.7rem;line-height:18px;text-align:center}
+
+  .toolbar{display:flex;gap:8px;margin:4px 0 12px}
+  .toolbar input{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+  .btn{border:0;border-radius:10px;padding:10px 14px;background:var(--deep);color:#fff;font-weight:600;cursor:pointer}
+  .btn.secondary{background:var(--card);color:var(--deep);border:1px solid var(--line)}
+  .btn.danger{background:#9B2C2C}
+  .btn.block{width:100%;margin-top:8px}
+
+  .day{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;cursor:pointer;display:grid;grid-template-columns:52px 1fr;gap:12px}
+  .day.today{border:2px solid var(--ochre);box-shadow:0 2px 10px rgba(184,70,31,.15)}
+  .day.past{opacity:.6}
+  .date{text-align:center;border-right:1px solid var(--line);padding-right:10px}
+  .date .wd{font-size:.75rem;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .date .d{font-size:1.5rem;font-weight:700;line-height:1.1}
+  .date .m{font-size:.75rem;color:var(--muted)}
+  .date .n{font-size:.68rem;color:var(--ochre);font-weight:600;margin-top:4px}
+  .was{font-weight:600;white-space:pre-line}
+  .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{font-size:.78rem;padding:2px 8px;border-radius:999px;background:#EFE6D8;color:#5A4A3C}
+  .chip.ok{background:var(--green-soft);color:var(--green)}
+  .chip.todo{background:var(--warn-soft);color:var(--warn)}
+  .chip.car{background:var(--ochre-soft);color:var(--ochre)}
+  .stay{font-size:.88rem;color:var(--muted);margin-top:6px}
+  .today-label{font-size:.7rem;font-weight:700;color:var(--ochre);text-transform:uppercase;letter-spacing:.05em}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+  .card h2{font-size:1rem;margin:0 0 8px}
+  .card p{margin:6px 0;color:var(--muted)}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+  .stat b{display:block;font-size:1.35rem}
+  .stat span{font-size:.75rem;color:var(--muted)}
+  .row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+  .row:first-of-type{border-top:0}
+  .row .l{font-weight:600}
+  .row .r{color:var(--muted);font-size:.85rem;text-align:right;white-space:nowrap}
+  .todo-item{padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+  .todo-item:first-of-type{border-top:0}
+  .todo-item small{color:var(--ochre);font-weight:600}
+  .todo-item div{white-space:pre-line}
+  .empty{text-align:center;padding:40px 12px;color:var(--muted)}
+  .empty svg{width:72px;height:72px;margin-bottom:8px}
+
+  dialog{border:0;border-radius:18px 18px 0 0;padding:0;width:100%;max-width:720px;margin:auto auto 0;max-height:92vh;background:var(--card);color:var(--ink)}
+  dialog::backdrop{background:rgba(20,15,10,.45)}
+  .dlg-head{position:sticky;top:0;background:var(--card);padding:16px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:1}
+  .dlg-head h3{margin:0;font-size:1.05rem}
+  .x{background:none;border:0;font-size:1.6rem;line-height:1;color:var(--muted);padding:4px 8px;cursor:pointer}
+  .dlg-body{padding:12px 16px calc(20px + env(safe-area-inset-bottom))}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:4px}
+  .field input,.field textarea,.field select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .field textarea{min-height:70px;resize:vertical}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .detail dt{font-size:.78rem;font-weight:600;color:var(--muted);margin-top:12px}
+  .detail dd{margin:2px 0 0;white-space:pre-line}
+  .actions{display:flex;gap:8px;margin-top:18px}
+  .actions .btn{flex:1}
+  .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--deep);color:#fff;padding:10px 16px;border-radius:10px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw;text-align:center}
+  .toast.show{opacity:1}
+  .hint{font-size:.85rem;color:var(--muted)}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Australien 2027</h1>
+  <div class="sub" id="subtitle">Reiseplan</div>
+</header>
+
+<main id="main"></main>
+
+<nav>
+  <button data-tab="plan" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Plan</button>
+  <button data-tab="offen">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>Offen <span id="todoBadge" class="badge hidden"></span></span></button>
+  <button data-tab="unterkunft">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Unterkünfte</button>
+  <button data-tab="daten">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></svg>Daten</button>
+</nav>
+
+<!-- Detail / Bearbeiten -->
+<dialog id="dlg">
+  <div class="dlg-head"><h3 id="dlgTitle"></h3><button class="x" data-close aria-label="Schliessen">×</button></div>
+  <div class="dlg-body" id="dlgBody"></div>
+</dialog>
+
+<!-- Register-Auswahl beim Import -->
+<dialog id="sheetDlg">
+  <div class="dlg-head"><h3>Welches Register importieren?</h3><button class="x" data-close aria-label="Schliessen">×</button></div>
+  <div class="dlg-body">
+    <div class="field"><label for="sheetSel">Register</label><select id="sheetSel"></select></div>
+    <p class="hint">Achtung: Der Import ersetzt den aktuellen Plan in der App. Exportiere vorher ein Backup, falls du unterwegs etwas geändert hast.</p>
+    <div class="actions"><button class="btn secondary" data-close>Abbrechen</button><button class="btn" id="sheetOk">Importieren</button></div>
+  </div>
+</dialog>
+
+<input type="file" id="fileIn" accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden">
+<div class="toast" id="toast"></div>
+
+<script src="xlsx.full.min.js"></script>
+<script>
+'use strict';
+const KEY = 'reiseplan-v1';
+const WD = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const MON = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+const FIELDS = [
+  // key, Bezeichnung in der App, Spaltenname im Export
+  ['datum','Datum','Datum'],
+  ['status','Status','Status'],
+  ['was','Was','Was'],
+  ['fahrzeit','Fahrzeit (h:min)','Fahrt (h/min)'],
+  ['km','Fahrt (km)','Fahrt (km)'],
+  ['besuch','Besichtigung (h)','Bes.(h)'],
+  ['mietauto','Mietauto','Miet-Auto'],
+  ['bemerkungen','Unterwegs / Bemerkungen','Unterwegs / Bemerkungen'],
+  ['zusatz','Weitere Infos','Weitere Infos'],
+  ['pendenzen','Pendenzen','Pendenzen'],
+  ['unterkunft','Unterkunft','Unterkunft'],
+  ['fruehstueck','Frühstück','Breakfast'],
+  ['notizen','Eigene Notizen','Notizen'],
+];
+
+let state = load();
+let tab = 'plan';
+let query = '';
+let pendingWb = null;
+let installEvt = null;
+
+/* ---------- Speicher ---------- */
+function load(){
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.days)) return s; } catch(e){}
+  return { title:'Australien 2027', days:[], importedAt:null, changedAt:null };
+}
+function save(){
+  state.changedAt = new Date().toISOString();
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch(e){ toast('Speichern fehlgeschlagen – Speicher voll?'); }
+}
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+
+/* ---------- Hilfsfunktionen ---------- */
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2600); }
+function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseISO(iso){ const [y,m,d]=iso.split('-').map(Number); return new Date(y,m-1,d); }
+function dayDiff(a,b){ return Math.round((parseISO(b)-parseISO(a))/86400000); }
+function fmtLong(iso){ if(!iso) return 'Ohne Datum'; const d=parseISO(iso); return WD[d.getDay()]+', '+d.getDate()+'. '+MON[d.getMonth()]+' '+d.getFullYear(); }
+function sortDays(){ state.days.sort((a,b)=> (a.datum||'9999') < (b.datum||'9999') ? -1 : (a.datum||'9999') > (b.datum||'9999') ? 1 : 0); }
+function firstLine(s){ return String(s||'').split('\n')[0]; }
+
+// Excel-Seriennummer oder Text -> JJJJ-MM-TT
+function toISO(v){
+  if (v == null || v === '') return '';
+  if (typeof v === 'number' && v > 20000 && v < 80000){
+    const d = new Date(Date.UTC(1899,11,30) + Math.round(v)*86400000);
+    return d.toISOString().slice(0,10);
+  }
+  const s = String(v).trim();
+  let m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+  if (m){ let y=+m[3]; if(y<100) y+=2000; return y+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0'); }
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return m[1]+'-'+m[2]+'-'+m[3];
+  return '';
+}
+// Fahrzeit: 2.15 -> "2:15", 3.3 -> "3:30"
+function fmtDrive(v){
+  if (v == null || v === '') return '';
+  if (typeof v === 'number'){
+    const h = Math.floor(v); const m = Math.round((v - h) * 100);
+    return h + ':' + String(m).padStart(2,'0');
+  }
+  return String(v).trim();
+}
+function driveMinutes(s){
+  const m = String(s||'').match(/^(\d+)[:.,h ]\s*(\d{1,2})?/);
+  if (!m) return 0;
+  let min = m[2] ? +m[2] : 0; if (m[2] && m[2].length===1) min*=10;
+  return (+m[1])*60 + min;
+}
+function clean(v){ if (v==null) return ''; const s=String(v).replace(/\r/g,'').trim(); return s==='-----'?'':s; }
+
+/* ---------- Import ---------- */
+function mapHeader(h, idx, dateIdx){
+  const s = String(h ?? '').toLowerCase().trim();
+  if (!s){
+    if (dateIdx >= 0 && idx === dateIdx + 1) return 'status';
+    return 'zusatz';
+  }
+  if (s.startsWith('datum')) return 'datum';
+  if (s === 'status') return 'status';
+  if (s.startsWith('was')) return 'was';
+  if (s.startsWith('fahrt') && s.includes('km')) return 'km';
+  if (s.startsWith('fahrt')) return 'fahrzeit';
+  if (s.startsWith('bes')) return 'besuch';
+  if (s.startsWith('miet')) return 'mietauto';
+  if (s.startsWith('unterwegs') || s.startsWith('bemerk')) return 'bemerkungen';
+  if (s.startsWith('weitere')) return 'zusatz';
+  if (s.startsWith('pendenz')) return 'pendenzen';
+  if (s.startsWith('unterkunft')) return 'unterkunft';
+  if (s.startsWith('breakfast') || s.startsWith('frühst') || s.startsWith('fruehst')) return 'fruehstueck';
+  if (s.startsWith('notiz')) return 'notizen';
+  return null; // z.B. Tag, Wochentag, Total -> wird berechnet / ignoriert
+}
+
+function importSheet(ws){
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:null, blankrows:false });
+  const hi = rows.findIndex(r => r && r.some(c => String(c ?? '').toLowerCase().trim().startsWith('datum')));
+  if (hi < 0) throw new Error('Keine Spalte «Datum» gefunden.');
+  const head = rows[hi];
+  const dateIdx = head.findIndex(c => String(c ?? '').toLowerCase().trim().startsWith('datum'));
+  const width = Math.max(...rows.map(r => r ? r.length : 0));
+  const map = []; for (let i=0;i<width;i++) map[i] = mapHeader(head[i], i, dateIdx);
+
+  const days = [];
+  for (const r of rows.slice(hi+1)){
+    if (!r) continue;
+    const d = { id:uid() }; FIELDS.forEach(([k]) => d[k] = '');
+    let hasData = false;
+    const extra = [];
+    r.forEach((v, i) => {
+      const k = map[i]; if (!k || v == null || String(v).trim()==='') return;
+      hasData = true;
+      if (k === 'datum') d.datum = toISO(v);
+      else if (k === 'fahrzeit') d.fahrzeit = fmtDrive(v);
+      else if (k === 'km' || k === 'besuch') d[k] = typeof v === 'number' ? String(Math.round(v*100)/100) : clean(v);
+      else if (k === 'zusatz') extra.push(clean(v));
+      else d[k] = clean(v);
+    });
+    if (extra.length) d.zusatz = [d.zusatz, ...extra].filter(Boolean).join('\n');
+    if (!hasData) continue;
+    if (d.datum){ days.push(d); continue; }
+    // Zeile ohne Datum: Text (z.B. "Ankunft Mailand") an den Vortag anhängen, Summenzeilen ignorieren
+    const rowText = r.map(c => String(c ?? '')).join(' ').toLowerCase();
+    if (rowText.includes('anzahl') || !d.was || !isNaN(Number(d.was))) continue;
+    const prev = days[days.length-1];
+    if (prev) prev.was = (prev.was ? prev.was + '\n' : '') + d.was;
+  }
+  if (!days.length) throw new Error('Keine Tage mit Datum gefunden.');
+  return days;
+}
+
+$('#fileIn').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try{
+    const buf = await f.arrayBuffer();
+    pendingWb = XLSX.read(buf, { type:'array' });
+    const sel = $('#sheetSel'); sel.innerHTML = '';
+    pendingWb.SheetNames.forEach(n => { const o=document.createElement('option'); o.value=o.textContent=n; sel.appendChild(o); });
+    const pref = pendingWb.SheetNames.find(n => /australien.*final/i.test(n)) || pendingWb.SheetNames.find(n => /final/i.test(n)) || pendingWb.SheetNames[0];
+    sel.value = pref;
+    $('#sheetDlg').showModal();
+  }catch(err){ toast('Datei konnte nicht gelesen werden.'); }
+});
+$('#sheetOk').addEventListener('click', () => {
+  try{
+    const name = $('#sheetSel').value;
+    const days = importSheet(pendingWb.Sheets[name]);
+    state.days = days; state.importedAt = new Date().toISOString(); state.sheet = name;
+    sortDays(); save();
+    $('#sheetDlg').close(); pendingWb = null;
+    tab = 'plan'; render();
+    toast(days.length + ' Tage importiert');
+  }catch(err){ toast(err.message || 'Import fehlgeschlagen'); }
+});
+
+/* ---------- Export ---------- */
+function buildWorkbook(){
+  const header = ['Wochentag', ...FIELDS.map(f => f[2])];
+  const data = [header];
+  sortDays();
+  state.days.forEach(d => {
+    const wd = d.datum ? WD[parseISO(d.datum).getDay()] : '';
+    data.push([wd, ...FIELDS.map(([k]) => {
+      if (k==='datum' && d.datum){ const p=d.datum.split('-'); return p[2]+'.'+p[1]+'.'+p[0]; }
+      if ((k==='km'||k==='besuch') && d[k]!=='' && !isNaN(Number(d[k]))) return Number(d[k]);
+      return d[k] || '';
+    })]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [6,11,9,40,10,9,8,9,40,20,20,32,10,30].map(w => ({ wch:w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, (state.sheet || 'Reiseplan').slice(0,31));
+  return wb;
+}
+function exportBlob(){
+  const out = XLSX.write(buildWorkbook(), { bookType:'xlsx', type:'array' });
+  return new Blob([out], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+function exportName(){ return 'Reiseplan_' + todayISO() + '.xlsx'; }
+function doDownload(){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(exportBlob()); a.download = exportName();
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  state.exportedAt = new Date().toISOString(); save(); toast('Excel-Datei gespeichert (Ordner «Downloads»)');
+}
+async function doShare(){
+  const file = new File([exportBlob()], exportName(), { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  try{
+    await navigator.share({ files:[file], title:'Reiseplan' });
+    state.exportedAt = new Date().toISOString(); save();
+  }catch(e){ if (e.name !== 'AbortError') toast('Teilen nicht möglich – bitte «Herunterladen» verwenden.'); }
+}
+
+/* ---------- Pendenzen ("buchen" usw.) ---------- */
+function todos(){
+  const list = [];
+  state.days.forEach(d => {
+    ['was','bemerkungen','pendenzen','mietauto','zusatz','notizen'].forEach(k => {
+      String(d[k]||'').split('\n').forEach(line => {
+        if (/buchen|reservier|organisier|abklären|\?\s*$/i.test(line) && !/gebucht/i.test(line)) list.push({ day:d, text:line.trim() });
+      });
+    });
+  });
+  return list;
+}
+
+/* ---------- Darstellung ---------- */
+function render(){
+  document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab===tab ? 'page' : 'false'));
+  $('#title').textContent = state.title || 'Reiseplan';
+  renderSubtitle();
+  const n = todos().length; const badge = $('#todoBadge');
+  badge.textContent = n; badge.classList.toggle('hidden', !n);
+  ({ plan:renderPlan, offen:renderTodos, unterkunft:renderStays, daten:renderData })[tab]();
+}
+function renderSubtitle(){
+  const dated = state.days.filter(d => d.datum);
+  const sub = $('#subtitle');
+  if (!dated.length){ sub.textContent = 'Noch kein Plan importiert'; return; }
+  const t = todayISO(), first = dated[0].datum, last = dated[dated.length-1].datum;
+  if (t < first){ const n = dayDiff(t, first); sub.textContent = 'Noch ' + n + (n===1?' Tag':' Tage') + ' bis zur Abreise'; }
+  else if (t > last) sub.textContent = 'Reise abgeschlossen – willkommen zurück!';
+  else sub.textContent = 'Reisetag ' + (dayDiff(first, t) + 1) + ' von ' + (dayDiff(first, last) + 1);
+}
+function emptyState(){
+  return `<div class="empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#B8461F" stroke-width="1.5"><path d="M3 18h18"/><path d="M5 18l3-6 4-2 5 1 2 7"/><circle cx="17" cy="6" r="2.5"/></svg>
+    <h2 style="color:var(--ink);margin:4px 0">G'day!</h2>
+    <p>Importiere deinen Reiseplan aus Excel. Die Daten bleiben nur auf diesem Gerät.</p>
+    <button class="btn" onclick="document.getElementById('fileIn').click()">Excel-Datei importieren</button>
+  </div>`;
+}
+function dayCard(d, idx, first){
+  const t = todayISO();
+  const cls = d.datum === t ? ' today' : (d.datum && d.datum < t && first && t <= (state.days.filter(x=>x.datum).slice(-1)[0]||{}).datum ? ' past' : '');
+  const dt = d.datum ? parseISO(d.datum) : null;
+  const num = d.datum && first ? 'Tag ' + (dayDiff(first, d.datum) + 1) : '';
+  const chips = [];
+  if (d.status) chips.push(`<span class="chip ${/gebucht/i.test(d.status)?'ok':''}">${esc(d.status)}</span>`);
+  if (d.fahrzeit) chips.push(`<span class="chip">🚗 ${esc(d.fahrzeit)} h</span>`);
+  if (d.km) chips.push(`<span class="chip">${esc(d.km)} km</span>`);
+  if (d.mietauto) chips.push(`<span class="chip car">Mietauto</span>`);
+  const nt = todos().filter(x => x.day === d).length;
+  if (nt) chips.push(`<span class="chip todo">${nt} offen</span>`);
+  const rest = String(d.was||'').split('\n').slice(1).join('\n');
+  return `<div class="day${cls}" data-id="${d.id}">
+    <div class="date">${dt ? `<div class="wd">${WD[dt.getDay()]}</div><div class="d">${dt.getDate()}</div><div class="m">${MON[dt.getMonth()]}</div><div class="n">${num}</div>` : '<div class="wd">–</div>'}</div>
+    <div>
+      ${d.datum === t ? '<div class="today-label">Heute</div>' : ''}
+      <div class="was">${esc(firstLine(d.was) || '(ohne Titel)')}</div>
+      ${rest ? `<div class="stay" style="white-space:pre-line">${esc(rest)}</div>` : ''}
+      ${d.unterkunft ? `<div class="stay">🛏 ${esc(d.unterkunft)}</div>` : ''}
+      ${chips.length ? `<div class="meta">${chips.join('')}</div>` : ''}
+    </div>
+  </div>`;
+}
+function renderPlan(){
+  const main = $('#main');
+  if (!state.days.length){ main.innerHTML = emptyState(); return; }
+  const q = query.toLowerCase();
+  const first = (state.days.find(d => d.datum) || {}).datum;
+  const list = state.days.filter(d => !q || FIELDS.some(([k]) => String(d[k]||'').toLowerCase().includes(q)));
+  const hasToday = state.days.some(d => d.datum === todayISO());
+  main.innerHTML = `<div class="toolbar">
+      <input type="search" id="q" placeholder="Suchen (Ort, Unterkunft …)" value="${esc(query)}">
+      ${hasToday ? '<button class="btn secondary" id="goToday">Heute</button>' : ''}
+      <button class="btn" id="addDay" aria-label="Tag hinzufügen">+</button>
+    </div>
+    ${list.map((d,i) => dayCard(d,i,first)).join('') || '<p class="empty">Keine Treffer.</p>'}`;
+  const qi = $('#q'); qi.addEventListener('input', () => { query = qi.value; const pos = qi.selectionStart; renderPlan(); const n=$('#q'); n.focus(); n.setSelectionRange(pos,pos); });
+  $('#addDay').addEventListener('click', () => openEdit(null));
+  if (hasToday) $('#goToday').addEventListener('click', scrollToday);
+  main.querySelectorAll('.day').forEach(el => el.addEventListener('click', () => openDetail(el.dataset.id)));
+}
+function scrollToday(){ const el = document.querySelector('.day.today'); if (el) el.scrollIntoView({ behavior:'smooth', block:'center' }); }
+
+function renderTodos(){
+  const main = $('#main');
+  if (!state.days.length){ main.innerHTML = emptyState(); return; }
+  const list = todos();
+  main.innerHTML = `<div class="card"><h2>Noch zu buchen / erledigen</h2>
+    <p class="hint">Erkannt an Wörtern wie «buchen», «reservieren» oder «abklären». Ändere den Text eines Tages (z.B. zu «gebucht»), dann verschwindet der Eintrag.</p>
+    ${list.length ? list.map((t,i) => `<div class="todo-item" data-id="${t.day.id}"><small>${esc(fmtLong(t.day.datum))}</small><div>${esc(t.text)}</div></div>`).join('') : '<p>Alles erledigt 🎉</p>'}
+  </div>`;
+  main.querySelectorAll('.todo-item').forEach(el => el.addEventListener('click', () => openDetail(el.dataset.id)));
+}
+
+function renderStays(){
+  const main = $('#main');
+  if (!state.days.length){ main.innerHTML = emptyState(); return; }
+  const groups = [];
+  state.days.forEach(d => {
+    const name = (d.unterkunft || '').replace(/\s*\(check-in[^)]*\)\s*/i,' ').trim();
+    if (!name) return;
+    const key = name.toLowerCase().slice(0,22);
+    const g = groups[groups.length-1];
+    if (g && g.key === key) { g.nights++; g.last = d; if (d.unterkunft.length > g.name.length) g.full = d.unterkunft; }
+    else groups.push({ key, name, full:d.unterkunft, first:d, last:d, nights:1, fr:d.fruehstueck });
+  });
+  const km = state.days.reduce((s,d) => s + (Number(d.km) || 0), 0);
+  const drive = state.days.reduce((s,d) => s + driveMinutes(d.fahrzeit), 0);
+  const nights = groups.reduce((s,g) => s + g.nights, 0);
+  main.innerHTML = `<div class="stats">
+      <div class="stat"><b>${nights}</b><span>Nächte</span></div>
+      <div class="stat"><b>${km.toLocaleString('de-CH')}</b><span>km Auto</span></div>
+      <div class="stat"><b>${Math.floor(drive/60)}:${String(drive%60).padStart(2,'0')}</b><span>h Fahrzeit</span></div>
+    </div>
+    <div class="card"><h2>Unterkünfte</h2>
+      ${groups.map(g => `<div class="row" data-id="${g.first.id}"><div><div class="l">${esc(g.full)}</div>
+        <div class="hint">${esc(fmtLong(g.first.datum))}${g.fr ? ' · Frühstück: ' + esc(g.fr) : ''}</div></div>
+        <div class="r">${g.nights} ${g.nights===1?'Nacht':'Nächte'}</div></div>`).join('')}
+    </div>`;
+  main.querySelectorAll('.row[data-id]').forEach(el => el.addEventListener('click', () => openDetail(el.dataset.id)));
+}
+
+function renderData(){
+  const main = $('#main');
+  const fmt = (iso) => iso ? new Date(iso).toLocaleString('de-CH', { dateStyle:'medium', timeStyle:'short' }) : '–';
+  const canShare = !!(navigator.canShare && navigator.canShare({ files:[new File([''], 'a.xlsx')] }));
+  const unsaved = state.changedAt && (!state.exportedAt || state.exportedAt < state.changedAt) && state.importedAt && state.changedAt > state.importedAt;
+  main.innerHTML = `
+    ${installEvt ? `<div class="card"><h2>App installieren</h2><p>Lege die App auf den Startbildschirm.</p><button class="btn block" id="install">Installieren</button></div>` : ''}
+    <div class="card"><h2>Excel importieren</h2>
+      <p>Lädt den Plan aus einer Excel-Datei. <b>Ersetzt</b> den aktuellen Plan in der App.</p>
+      <button class="btn block" id="imp">Excel-Datei wählen</button>
+    </div>
+    <div class="card"><h2>Backup / Export</h2>
+      <p>Speichert den aktuellen Stand (inkl. Änderungen unterwegs) als Excel-Datei.</p>
+      ${unsaved ? '<p style="color:var(--warn);font-weight:600">Es gibt Änderungen, die noch nicht exportiert wurden.</p>' : ''}
+      <button class="btn block" id="exp" ${state.days.length?'':'disabled'}>Herunterladen</button>
+      ${canShare ? `<button class="btn secondary block" id="share" ${state.days.length?'':'disabled'}>Teilen (Mail, Drive, WhatsApp …)</button>` : ''}
+    </div>
+    <div class="card"><h2>Einstellungen</h2>
+      <div class="field"><label for="tIn">Titel der Reise</label><input id="tIn" value="${esc(state.title||'')}"></div>
+      <p class="hint">Importiert: ${fmt(state.importedAt)}${state.sheet ? ' (Register «' + esc(state.sheet) + '»)' : ''}<br>
+      Zuletzt geändert: ${fmt(state.changedAt)}<br>Letzter Export: ${fmt(state.exportedAt)}<br>Tage im Plan: ${state.days.length}</p>
+      <button class="btn danger block" id="wipe" ${state.days.length?'':'disabled'}>Plan auf diesem Gerät löschen</button>
+    </div>
+    <p class="hint" style="text-align:center">Deine Daten werden nur auf diesem Gerät gespeichert und nirgends hochgeladen.</p>`;
+  $('#imp').addEventListener('click', () => $('#fileIn').click());
+  $('#exp').addEventListener('click', () => { doDownload(); renderData(); });
+  if (canShare) $('#share').addEventListener('click', async () => { await doShare(); renderData(); });
+  $('#tIn').addEventListener('change', (e) => { state.title = e.target.value.trim(); save(); render(); });
+  $('#wipe').addEventListener('click', (e) => {
+    const b = e.currentTarget;
+    if (b.dataset.armed){ state.days = []; state.importedAt = null; save(); render(); toast('Plan gelöscht'); }
+    else { b.dataset.armed = '1'; b.textContent = 'Wirklich löschen? Nochmals tippen'; }
+  });
+  if (installEvt) $('#install').addEventListener('click', async () => { installEvt.prompt(); await installEvt.userChoice; installEvt = null; renderData(); });
+}
+
+/* ---------- Detail & Bearbeiten ---------- */
+function openDetail(id){
+  const d = state.days.find(x => x.id === id); if (!d) return;
+  $('#dlgTitle').textContent = fmtLong(d.datum);
+  const rows = FIELDS.filter(([k]) => k !== 'datum' && d[k]).map(([k,label]) => {
+    let v = d[k]; if (k==='fahrzeit') v += ' h'; if (k==='km') v += ' km'; if (k==='besuch') v += ' h';
+    return `<dt>${esc(label)}</dt><dd>${esc(v)}</dd>`;
+  }).join('');
+  $('#dlgBody').innerHTML = `<dl class="detail">${rows || '<p class="hint">Keine Angaben.</p>'}</dl>
+    ${d.unterkunft ? `<p style="margin-top:14px"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.unterkunft.replace(/\(.*?\)/g,'') + ' Australia')}" target="_blank" rel="noopener">📍 Unterkunft in Google Maps öffnen</a></p>` : ''}
+    <div class="actions"><button class="btn secondary" data-close>Schliessen</button><button class="btn" id="editBtn">Bearbeiten</button></div>`;
+  $('#editBtn').addEventListener('click', () => openEdit(id));
+  const dlg = $('#dlg'); if (!dlg.open) dlg.showModal();
+}
+function openEdit(id){
+  const d = id ? state.days.find(x => x.id === id) : null;
+  const v = (k) => esc(d ? d[k] : '');
+  const long = new Set(['was','bemerkungen','zusatz','pendenzen','notizen']);
+  $('#dlgTitle').textContent = d ? 'Tag bearbeiten' : 'Neuer Tag';
+  const f = (k,label,type) => `<div class="field"><label for="f_${k}">${esc(label)}</label>${
+    long.has(k) ? `<textarea id="f_${k}">${v(k)}</textarea>` : `<input id="f_${k}" type="${type||'text'}" value="${v(k)}"${k==='km'||k==='besuch'?' inputmode="decimal"':''}>`}</div>`;
+  const L = Object.fromEntries(FIELDS.map(([k,l]) => [k,l]));
+  $('#dlgBody').innerHTML = `
+    <div class="grid2">${f('datum',L.datum,'date')}${f('status',L.status)}</div>
+    ${f('was',L.was)}
+    <div class="grid2">${f('fahrzeit',L.fahrzeit)}${f('km',L.km)}</div>
+    <div class="grid2">${f('besuch',L.besuch)}${f('mietauto',L.mietauto)}</div>
+    ${f('unterkunft',L.unterkunft)}${f('fruehstueck',L.fruehstueck)}
+    ${f('bemerkungen',L.bemerkungen)}${f('pendenzen',L.pendenzen)}${f('zusatz',L.zusatz)}${f('notizen',L.notizen)}
+    <div class="actions">${d ? '<button class="btn danger" id="delBtn">Löschen</button>' : '<button class="btn secondary" data-close>Abbrechen</button>'}<button class="btn" id="saveBtn">Speichern</button></div>`;
+  $('#saveBtn').addEventListener('click', () => {
+    const t = d || { id:uid() };
+    FIELDS.forEach(([k]) => { t[k] = $('#f_'+k).value.trim(); });
+    if (!t.datum){ toast('Bitte ein Datum angeben'); return; }
+    if (!d) state.days.push(t);
+    sortDays(); save(); render(); openDetail(t.id); toast('Gespeichert');
+  });
+  if (d) $('#delBtn').addEventListener('click', (e) => {
+    const b = e.currentTarget;
+    if (!b.dataset.armed){ b.dataset.armed='1'; b.textContent='Wirklich?'; return; }
+    state.days = state.days.filter(x => x !== d); save(); $('#dlg').close(); render(); toast('Tag gelöscht');
+  });
+  const dlg = $('#dlg'); if (!dlg.open) dlg.showModal();
+}
+
+/* ---------- Allgemein ---------- */
+document.addEventListener('click', (e) => { const c = e.target.closest('[data-close]'); if (c) c.closest('dialog').close(); });
+document.querySelectorAll('dialog').forEach(dl => dl.addEventListener('click', (e) => { if (e.target === dl) dl.close(); }));
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; render(); window.scrollTo(0,0); }));
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; if (tab==='daten') renderData(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+
+render();
+if (tab === 'plan') setTimeout(scrollToday, 50);
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
