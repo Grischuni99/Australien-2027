@@ -329,13 +329,6 @@ function doDownload(){
   document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   state.exportedAt = new Date().toISOString(); save(); toast('Excel-Datei gespeichert (Ordner «Downloads»)');
 }
-async function doShare(){
-  const file = new File([exportBlob()], exportName(), { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  try{
-    await navigator.share({ files:[file], title:'Reiseplan' });
-    state.exportedAt = new Date().toISOString(); save();
-  }catch(e){ if (e.name !== 'AbortError') toast('Teilen nicht möglich – bitte «Herunterladen» verwenden.'); }
-}
 
 /* ---------- Pendenzen ("buchen" usw.) ---------- */
 function todos(){
@@ -462,7 +455,6 @@ function renderStays(){
 function renderData(){
   const main = $('#main');
   const fmt = (iso) => iso ? new Date(iso).toLocaleString('de-CH', { dateStyle:'medium', timeStyle:'short' }) : '–';
-  const canShare = !!(navigator.canShare && navigator.canShare({ files:[new File([''], 'a.xlsx')] }));
   const unsaved = state.changedAt && (!state.exportedAt || state.exportedAt < state.changedAt) && state.importedAt && state.changedAt > state.importedAt;
   main.innerHTML = `
     ${installEvt ? `<div class="card"><h2>App installieren</h2><p>Lege die App auf den Startbildschirm.</p><button class="btn block" id="install">Installieren</button></div>` : ''}
@@ -474,7 +466,7 @@ function renderData(){
       <p>Speichert den aktuellen Stand (inkl. Änderungen unterwegs) als Excel-Datei.</p>
       ${unsaved ? '<p style="color:var(--warn);font-weight:600">Es gibt Änderungen, die noch nicht exportiert wurden.</p>' : ''}
       <button class="btn block" id="exp" ${state.days.length?'':'disabled'}>Herunterladen</button>
-      ${canShare ? `<button class="btn secondary block" id="share" ${state.days.length?'':'disabled'}>Teilen (Mail, Drive, WhatsApp …)</button>` : ''}
+      <p class="hint">Die Datei landet im Ordner «Downloads». Zum Weitergeben in WhatsApp: Büroklammer → «Dokument» → Datei «Reiseplan_…xlsx» wählen.</p>
     </div>
     <div class="card"><h2>Einstellungen</h2>
       <div class="field"><label for="tIn">Titel der Reise</label><input id="tIn" value="${esc(state.title||'')}"></div>
@@ -485,7 +477,6 @@ function renderData(){
     <p class="hint" style="text-align:center">Deine Daten werden nur auf diesem Gerät gespeichert und nirgends hochgeladen.</p>`;
   $('#imp').addEventListener('click', () => $('#fileIn').click());
   $('#exp').addEventListener('click', () => { doDownload(); renderData(); });
-  if (canShare) $('#share').addEventListener('click', async () => { await doShare(); renderData(); });
   $('#tIn').addEventListener('change', (e) => { state.title = e.target.value.trim(); save(); render(); });
   $('#wipe').addEventListener('click', (e) => {
     const b = e.currentTarget;
