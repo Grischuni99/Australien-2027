@@ -1,6 +1,6 @@
 // Service Worker: speichert die App-Dateien, damit sie offline läuft.
 // Bei einer neuen App-Version die Nummer erhöhen.
-const CACHE = 'australien-app-v4';
+const CACHE = 'australien-app-v5';
 const FILES = [
   './',
   './index.html',
@@ -25,6 +25,8 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  // Wetterdaten u.ä. von anderen Servern nicht abfangen – die sollen immer live geladen werden
+  if (new URL(e.request.url).origin !== self.location.origin) return;
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then((hit) => {
       if (hit) return hit;

@@ -24,7 +24,7 @@
   header .sub{font-size:.9rem;opacity:.85;margin-top:2px}
   main{padding:12px 16px calc(96px + env(safe-area-inset-bottom));max-width:720px;margin:0 auto}
   nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
-    display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+    display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom);z-index:5}
   nav button{background:none;border:0;padding:9px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.75rem;color:var(--muted)}
   nav button svg{width:24px;height:24px}
   nav button[aria-current="page"]{color:var(--ochre);font-weight:600}
@@ -51,12 +51,23 @@
   .chip.ok{background:var(--green-soft);color:var(--green)}
   .chip.todo{background:var(--warn-soft);color:var(--warn)}
   .chip.car{background:var(--ochre-soft);color:var(--ochre)}
-  a.chip.flight{background:var(--deep);color:#fff;text-decoration:none;font-weight:600}
-  .flights{margin-top:16px;padding:12px;border-radius:12px;background:#EEF3F2;border:1px solid #D3E0DE}
-  .flights h4{margin:0 0 4px;font-size:.95rem}
-  .flight-row{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
-  .flight-row b{min-width:64px}
-  .flight-row a{flex:1;text-align:center;text-decoration:none;padding:9px 10px;font-size:.88rem}
+  a.fl{display:inline-block;vertical-align:middle;margin:2px 0 2px 4px;padding:3px 9px;border-radius:999px;background:var(--deep);color:#fff;text-decoration:none;font-size:.76rem;font-weight:600;white-space:nowrap;line-height:1.4}
+  a.fl.alt{background:#fff;color:var(--deep);border:1px solid var(--line)}
+  .rt{white-space:pre-line}
+  /* Wetter */
+  .wx-now{display:flex;align-items:center;gap:14px}
+  .wx-now .ic{font-size:3rem;line-height:1}
+  .wx-now .t{font-size:2.2rem;font-weight:700;line-height:1}
+  .wx-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px;text-align:center}
+  .wx-days div{background:#F3EDE3;border-radius:10px;padding:6px 2px;font-size:.72rem}
+  .wx-days .ic{font-size:1.3rem;display:block;margin:2px 0}
+  .wx-days b{display:block;font-size:.82rem}
+  .wx-days .rain{color:#2F6690}
+  .place{padding:11px 0;border-top:1px solid var(--line);cursor:pointer}
+  .place:first-of-type{border-top:0}
+  .place .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .place .cur{font-size:1.05rem;font-weight:700;white-space:nowrap}
+  .chip.wx{background:#E4EEF5;color:#2F4F6B}
   .stay{font-size:.88rem;color:var(--muted);margin-top:6px}
   .today-label{font-size:.7rem;font-weight:700;color:var(--ochre);text-transform:uppercase;letter-spacing:.05em}
 
@@ -112,6 +123,8 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Plan</button>
   <button data-tab="offen">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>Offen <span id="todoBadge" class="badge hidden"></span></span></button>
+  <button data-tab="wetter">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.5M2.5 8H1M3.6 3.6l1 1M12.4 3.6l-1 1"/><path d="M8 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.5A3.3 3.3 0 0 0 8 20z"/></svg>Wetter</button>
   <button data-tab="unterkunft">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Unterkünfte</button>
   <button data-tab="daten">
@@ -158,6 +171,7 @@ const FIELDS = [
   ['unterkunft','Unterkunft','Unterkunft'],
   ['fruehstueck','Frühstück','Breakfast'],
   ['notizen','Eigene Notizen','Notizen'],
+  ['ort','Ort für Wetter (leer = automatisch)','Ort'],
 ];
 
 let state = load();
@@ -191,18 +205,27 @@ function sortDays(){ state.days.sort((a,b)=> (a.datum||'9999') < (b.datum||'9999
 function firstLine(s){ return String(s||'').split('\n')[0]; }
 
 /* ---------- Flüge: Flugnummern erkennen und Live-Status verlinken ---------- */
+// Flugnummern in einer Zeile – nur wenn «Flug»/«Flight» in derselben Zeile steht
+function flightCodesInLine(line){
+  if (!/flug|flight/i.test(line)) return [];
+  const re = /\b([A-Z]{2}|[A-Z]\d|\d[A-Z])\s?(\d{1,4})\b/g; const out = []; let m;
+  while ((m = re.exec(line))){ const c = m[1] + m[2]; if (!out.includes(c)) out.push(c); }
+  return out;
+}
 function flightsOf(d){
-  const text = ['was','bemerkungen','zusatz','pendenzen','notizen'].map(k => d[k] || '').join('\n');
-  const re = /\b([A-Z]{2}|[A-Z]\d|\d[A-Z])\s?(\d{1,4})\b/g;
-  const found = []; let m;
-  while ((m = re.exec(text))){
-    const code = m[1] + m[2];
-    // nur in einem Flug-Kontext: das Wort «Flug»/«Flight» steht in derselben Zeile
-    const line = text.slice(text.lastIndexOf('\n', m.index) + 1, (text.indexOf('\n', m.index) + 1 || text.length + 1) - 1);
-    if (!/flug|flight/i.test(line)) continue;
-    if (!found.includes(code)) found.push(code);
-  }
-  return found;
+  const out = [];
+  ['was','bemerkungen','zusatz','pendenzen','notizen'].forEach(k => String(d[k]||'').split('\n')
+    .forEach(l => flightCodesInLine(l).forEach(c => { if (!out.includes(c)) out.push(c); })));
+  return out;
+}
+// Text mit Flugstatus-Knöpfen direkt hinter der Zeile, in der der Flug steht
+function richText(text, full){
+  return String(text||'').split('\n').map(line => {
+    const codes = flightCodesInLine(line);
+    return esc(line) + codes.map(f =>
+      ` <a class="fl" href="${statusUrl(f)}" target="_blank" rel="noopener" data-stop>✈ Status ${esc(f)}</a>` +
+      (full ? ` <a class="fl alt" href="${radarUrl(f)}" target="_blank" rel="noopener" data-stop>Radar</a>` : '')).join('');
+  }).join('\n');
 }
 // Frühstück als farbiges Etikett: gebucht = grün, nein = grau, sonst (z.B. «zusätzlich») = orange
 function breakfastChip(v){
@@ -264,6 +287,7 @@ function mapHeader(h, idx, dateIdx){
   if (s.startsWith('unterkunft')) return 'unterkunft';
   if (s.startsWith('breakfast') || s.startsWith('frühst') || s.startsWith('fruehst')) return 'fruehstueck';
   if (s.startsWith('notiz')) return 'notizen';
+  if (s === 'ort' || s.startsWith('ort ')) return 'ort';
   return null; // z.B. Tag, Wochentag, Total -> wird berechnet / ignoriert
 }
 
@@ -326,6 +350,7 @@ $('#sheetOk').addEventListener('click', () => {
     $('#sheetDlg').close(); pendingWb = null;
     tab = 'plan'; render();
     toast(days.length + ' Tage importiert');
+    refreshWeather(true);
   }catch(err){ toast(err.message || 'Import fehlgeschlagen'); }
 });
 
@@ -343,7 +368,7 @@ function buildWorkbook(){
     })]);
   });
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [6,11,9,40,10,9,8,9,40,20,20,32,10,30].map(w => ({ wch:w }));
+  ws['!cols'] = [6,11,9,40,10,9,8,9,40,20,20,32,10,30,16].map(w => ({ wch:w }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, (state.sheet || 'Reiseplan').slice(0,31));
   return wb;
@@ -379,7 +404,7 @@ function render(){
   renderSubtitle();
   const n = todos().length; const badge = $('#todoBadge');
   badge.textContent = n; badge.classList.toggle('hidden', !n);
-  ({ plan:renderPlan, offen:renderTodos, unterkunft:renderStays, daten:renderData })[tab]();
+  ({ plan:renderPlan, offen:renderTodos, wetter:renderWeather, unterkunft:renderStays, daten:renderData })[tab]();
 }
 function renderSubtitle(){
   const dated = state.days.filter(d => d.datum);
@@ -407,7 +432,8 @@ function dayCard(d, idx, first){
   if (d.status) chips.push(`<span class="chip ${/gebucht/i.test(d.status)?'ok':''}">${esc(d.status)}</span>`);
   if (d.fahrzeit) chips.push(`<span class="chip">🚗 ${esc(d.fahrzeit)} h</span>`);
   if (d.km) chips.push(`<span class="chip">${esc(d.km)} km</span>`);
-  flightsOf(d).forEach(f => chips.push(`<a class="chip flight" href="${statusUrl(f)}" target="_blank" rel="noopener" data-stop>✈ Status ${esc(f)}</a>`));
+  const fc = forecastFor(d);
+  if (fc) chips.unshift(`<span class="chip wx">${fc.icon} ${fc.max}° / ${fc.min}°${fc.rain != null ? ' · 💧' + fc.rain + '%' : ''}</span>`);
   if (d.mietauto) chips.push(`<span class="chip car">Mietauto</span>`);
   const nt = todos().filter(x => x.day === d).length;
   if (nt) chips.push(`<span class="chip todo">${nt} offen</span>`);
@@ -416,8 +442,8 @@ function dayCard(d, idx, first){
     <div class="date">${dt ? `<div class="wd">${WD[dt.getDay()]}</div><div class="d">${dt.getDate()}</div><div class="m">${MON[dt.getMonth()]}</div><div class="n">${num}</div>` : '<div class="wd">–</div>'}</div>
     <div>
       ${d.datum === t ? '<div class="today-label">Heute</div>' : ''}
-      <div class="was">${esc(firstLine(d.was) || '(ohne Titel)')}</div>
-      ${rest ? `<div class="stay" style="white-space:pre-line">${esc(rest)}</div>` : ''}
+      <div class="was">${firstLine(d.was) ? richText(firstLine(d.was)) : '(ohne Titel)'}</div>
+      ${rest ? `<div class="stay rt">${richText(rest)}</div>` : ''}
       ${d.unterkunft ? `<div class="stay">🛏 ${esc(d.unterkunft)}</div>${d.fruehstueck ? `<div style="margin-top:4px">${breakfastChip(d.fruehstueck)}</div>` : ''}` : ''}
       ${chips.length ? `<div class="meta">${chips.join('')}</div>` : ''}
     </div>
@@ -519,22 +545,182 @@ function renderData(){
   if (installEvt) $('#install').addEventListener('click', async () => { installEvt.prompt(); await installEvt.userChoice; installEvt = null; renderData(); });
 }
 
+/* ---------- Wetter (Open-Meteo: kostenlos, ohne Schlüssel) ---------- */
+const WX_KEY = 'wetter-v1';
+const PLACES = [
+  ['Mailand', 45.63, 8.72, /mailand|milano|malpensa/i],
+  ['Brisbane', -27.47, 153.03, /brisbane|clayfield/i],
+  ['Noosa', -26.39, 153.09, /noosa|tewantin/i],
+  ['Hervey Bay', -25.29, 152.84, /hervey/i],
+  ["K'gari", -25.24, 153.13, /k.?gari|fraser island/i],
+  ['Airlie Beach (Whitsundays)', -20.27, 148.72, /proserpine|whitsunday|airlie|sunlit waters/i],
+  ['Magnetic Island', -19.15, 146.85, /magnetic island/i],
+  ['Townsville', -19.26, 146.82, /townsville|kissing point|qcwa/i],
+  ['Cape Tribulation', -16.09, 145.46, /daintree|cape tribulation/i],
+  ['Atherton', -17.27, 145.48, /atherton|altherton/i],
+  ['Kuranda', -16.82, 145.64, /kuranda/i],
+  ['Port Douglas', -16.48, 145.46, /port douglas/i],
+  ['Cairns', -16.92, 145.77, /cairns|esplanade/i],
+  ['Kings Canyon', -24.25, 131.57, /kings canyon/i],
+  ['Uluru', -25.24, 130.99, /uluru|ayers|yulara|outback lodge|kata tjuta/i],
+  ['Sydney', -33.87, 151.21, /sydney/i],
+];
+let wx = (() => { try { return JSON.parse(localStorage.getItem(WX_KEY)) || {}; } catch(e){ return {}; } })();
+wx.data = wx.data || {}; wx.geo = wx.geo || {};
+const wxOpen = new Set();
+let wxBusy = false;
+function saveWx(){ try { localStorage.setItem(WX_KEY, JSON.stringify(wx)); } catch(e){} }
+
+// Ort eines Tages: eigenes Feld «Ort», sonst der zuletzt genannte bekannte Ort im Text, sonst die Unterkunft
+function placeOf(d){
+  if (d.ort){
+    const g = wx.geo[d.ort.toLowerCase()];
+    return { name:d.ort, lat:g && g.lat, lon:g && g.lon, custom:true };
+  }
+  const find = (text, skipHome) => {
+    let best = null, bestPos = -1;
+    PLACES.forEach(p => {
+      if (skipHome && p[0] === 'Mailand') return;
+      const re = new RegExp(p[3].source, 'gi'); let m;
+      while ((m = re.exec(text))) if (m.index >= bestPos){ bestPos = m.index; best = p; }
+    });
+    return best;
+  };
+  let text = String(d.was || '');
+  // «Abend Fahrt nach …» zählt nicht – tagsüber ist man noch am vorherigen Ort
+  const ab = text.search(/\babends?\b/i);
+  if (ab > 0 && find(text.slice(0, ab))) text = text.slice(0, ab);
+  // am Rückreisetag zählt der Abflugort in Australien, nicht Mailand
+  let best = find(text, true) || find(text);
+  if (!best) best = PLACES.find(p => p[3].test(d.unterkunft || ''));
+  return best ? { name:best[0], lat:best[1], lon:best[2] } : null;
+}
+function tripPlaces(){
+  const list = [];
+  state.days.forEach(d => {
+    const p = placeOf(d); if (!p) return;
+    let e = list.find(x => x.name === p.name);
+    if (!e){ e = { ...p, days:[] }; list.push(e); }
+    if (d.datum) e.days.push(d.datum);
+  });
+  return list;
+}
+const WMO = (c, day=1) => {
+  if (c === 0) return [day ? '☀️' : '🌙', 'Sonnig'];
+  if (c === 1) return [day ? '🌤️' : '🌙', 'Überwiegend sonnig'];
+  if (c === 2) return ['⛅', 'Teilweise bewölkt'];
+  if (c === 3) return ['☁️', 'Bewölkt'];
+  if (c === 45 || c === 48) return ['🌫️', 'Nebel'];
+  if (c >= 51 && c <= 57) return ['🌦️', 'Nieselregen'];
+  if (c >= 61 && c <= 67) return ['🌧️', 'Regen'];
+  if (c >= 71 && c <= 77) return ['🌨️', 'Schnee'];
+  if (c >= 80 && c <= 82) return ['🌦️', 'Regenschauer'];
+  if (c === 85 || c === 86) return ['🌨️', 'Schneeschauer'];
+  if (c >= 95) return ['⛈️', 'Gewitter'];
+  return ['🌡️', '–'];
+};
+// Prognose für einen Reisetag (nur wenn das Datum in der 7-Tage-Prognose liegt)
+function forecastFor(d){
+  const p = placeOf(d); if (!p || !d.datum) return null;
+  const w = wx.data[p.name]; if (!w || !w.daily) return null;
+  const i = w.daily.time.indexOf(d.datum); if (i < 0) return null;
+  const [icon, label] = WMO(w.daily.weather_code[i]);
+  const rain = w.daily.precipitation_probability_max ? w.daily.precipitation_probability_max[i] : null;
+  return { icon, label, max:Math.round(w.daily.temperature_2m_max[i]), min:Math.round(w.daily.temperature_2m_min[i]), rain };
+}
+async function geocode(name){
+  const key = name.toLowerCase();
+  if (wx.geo[key]) return wx.geo[key];
+  const r = await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=de&name=' + encodeURIComponent(name));
+  const j = await r.json(); const g = j.results && j.results[0];
+  if (!g) return null;
+  wx.geo[key] = { lat:g.latitude, lon:g.longitude, label:g.name + (g.country ? ', ' + g.country : '') };
+  saveWx(); return wx.geo[key];
+}
+async function refreshWeather(force){
+  if (wxBusy || !navigator.onLine) return;
+  const places = tripPlaces(); if (!places.length) return;
+  if (!force && wx.at && Date.now() - wx.at < 30*60*1000) return; // höchstens alle 30 Min. neu laden
+  wxBusy = true; if (tab === 'wetter') renderWeather();
+  let ok = 0;
+  await Promise.allSettled(places.map(async p => {
+    if (p.custom && p.lat == null){ const g = await geocode(p.name); if (!g) return; p.lat = g.lat; p.lon = g.lon; }
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + p.lat + '&longitude=' + p.lon +
+      '&current=temperature_2m,weather_code,is_day,wind_speed_10m' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
+      '&timezone=auto&forecast_days=7';
+    const r = await fetch(url); if (!r.ok) throw new Error(r.status);
+    wx.data[p.name] = await r.json(); ok++;
+  }));
+  wxBusy = false;
+  if (ok){ wx.at = Date.now(); saveWx(); }
+  else if (force) toast('Wetter konnte nicht geladen werden');
+  if (tab === 'wetter') renderWeather();
+  else if (tab === 'plan' && document.activeElement && document.activeElement.id !== 'q') renderPlan();
+}
+function fmtRange(days){
+  if (!days.length) return '';
+  const a = parseISO(days[0]), b = parseISO(days[days.length-1]);
+  return days.length === 1 ? a.getDate() + '. ' + MON[a.getMonth()] : a.getDate() + '.–' + b.getDate() + '. ' + MON[b.getMonth()];
+}
+function weekHTML(w){
+  if (!w || !w.daily) return '';
+  return `<div class="wx-days">${w.daily.time.map((t,i) => {
+    const [ic, lb] = WMO(w.daily.weather_code[i]); const dt = parseISO(t);
+    const rain = w.daily.precipitation_probability_max ? w.daily.precipitation_probability_max[i] : null;
+    return `<div title="${esc(lb)}">${i === 0 ? 'Heute' : WD[dt.getDay()]}<span class="ic">${ic}</span><b>${Math.round(w.daily.temperature_2m_max[i])}°</b>${Math.round(w.daily.temperature_2m_min[i])}°${rain != null ? `<div class="rain">${rain}%</div>` : ''}</div>`;
+  }).join('')}</div>`;
+}
+function nowHTML(w){
+  if (!w || !w.current) return '';
+  const [ic, lb] = WMO(w.current.weather_code, w.current.is_day);
+  return `<div class="wx-now"><span class="ic">${ic}</span><div><div class="t">${Math.round(w.current.temperature_2m)}°</div>
+    <div class="hint">${esc(lb)} · Wind ${Math.round(w.current.wind_speed_10m)} km/h</div></div></div>`;
+}
+function renderWeather(){
+  const main = $('#main');
+  if (!state.days.length){ main.innerHTML = emptyState(); return; }
+  const places = tripPlaces();
+  const t = todayISO();
+  const today = state.days.find(d => d.datum === t);
+  const here = today && placeOf(today);
+  const dated = state.days.filter(d => d.datum);
+  const before = dated.length && t < dated[0].datum;
+  const stand = wx.at ? new Date(wx.at).toLocaleString('de-CH', { weekday:'short', hour:'2-digit', minute:'2-digit' }) : 'noch nie';
+  main.innerHTML = `
+    <div class="toolbar" style="align-items:center">
+      <div class="hint" style="flex:1">${wxBusy ? 'Wetter wird geladen …' : 'Stand: ' + esc(stand) + (navigator.onLine ? '' : ' · offline')}</div>
+      <button class="btn secondary" id="wxRefresh" ${wxBusy ? 'disabled' : ''}>Aktualisieren</button>
+    </div>
+    ${here ? `<div class="card"><h2>Heute in ${esc(here.name)}</h2>${nowHTML(wx.data[here.name]) || '<p>Noch keine Daten – bitte «Aktualisieren».</p>'}${weekHTML(wx.data[here.name])}</div>` : ''}
+    ${before ? `<p class="hint" style="margin:0 0 12px">Eine Prognose für eure Reisetage gibt es erst etwa 7 Tage vorher. Bis dahin siehst du hier das aktuelle Wetter an den Reiseorten. Ab dann erscheint das Wetter auch direkt bei jedem Tag im Plan.</p>` : ''}
+    <div class="card"><h2>Orte der Reise</h2>
+      ${places.map(p => { const w = wx.data[p.name]; const cur = w && w.current; const op = wxOpen.has(p.name);
+        return `<div class="place" data-place="${esc(p.name)}"><div class="top"><div><div class="l"><b>${esc(p.name)}</b></div><div class="hint">${esc(fmtRange(p.days))}</div></div>
+          <div class="cur">${cur ? WMO(cur.weather_code, cur.is_day)[0] + ' ' + Math.round(cur.temperature_2m) + '°' : '–'} <span class="hint">${op ? '▲' : '▼'}</span></div></div>
+          ${op ? (w ? `<div style="margin-top:10px">${nowHTML(w)}${weekHTML(w)}</div>` : '<p class="hint">Noch keine Daten.</p>') : ''}</div>`; }).join('')}
+      ${places.length ? '' : '<p>Keine Orte erkannt. Trage bei einem Tag unter «Bearbeiten» das Feld «Ort für Wetter» ein.</p>'}
+    </div>
+    <p class="hint" style="text-align:center">Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> · Temperaturen in °C, 💧 = Regenrisiko</p>`;
+  $('#wxRefresh').addEventListener('click', () => refreshWeather(true));
+  main.querySelectorAll('.place').forEach(el => el.addEventListener('click', () => {
+    const n = el.dataset.place; wxOpen.has(n) ? wxOpen.delete(n) : wxOpen.add(n); renderWeather();
+  }));
+}
+
 /* ---------- Detail & Bearbeiten ---------- */
 function openDetail(id){
   const d = state.days.find(x => x.id === id); if (!d) return;
   $('#dlgTitle').textContent = fmtLong(d.datum);
   const rows = FIELDS.filter(([k]) => k !== 'datum' && d[k]).map(([k,label]) => {
     let v = d[k]; if (k==='fahrzeit') v += ' h'; if (k==='km') v += ' km'; if (k==='besuch') v += ' h';
-    return `<dt>${esc(label)}</dt><dd>${esc(v)}</dd>`;
+    return `<dt>${esc(label)}</dt><dd>${['was','bemerkungen','zusatz','pendenzen','notizen'].includes(k) ? richText(v, true) : esc(v)}</dd>`;
   }).join('');
-  const fl = flightsOf(d);
-  const flightBox = fl.length ? `<div class="flights"><h4>✈ Live-Flugstatus</h4>
-    <div class="hint">Abflugzeit, Verspätung, Terminal und Gate – direkt von der Online-Quelle. Das Gate steht meist erst 1–2 h vor Abflug fest. Braucht Internet.</div>
-    ${fl.map(f => `<div class="flight-row"><b>${esc(f)}</b>
-      <a class="btn" href="${statusUrl(f)}" target="_blank" rel="noopener">Status &amp; Gate</a>
-      <a class="btn secondary" href="${radarUrl(f)}" target="_blank" rel="noopener">Flightradar24</a></div>`).join('')}
-  </div>` : '';
-  $('#dlgBody').innerHTML = `${flightBox}<dl class="detail">${rows || '<p class="hint">Keine Angaben.</p>'}</dl>
+  const flHint = flightsOf(d).length ? '<p class="hint" style="margin-top:14px">✈ «Status» zeigt live Abflugzeit, Verspätung, Terminal und Gate (Gate meist erst 1–2 h vor Abflug). «Radar» zeigt, wo das Flugzeug gerade ist.</p>' : '';
+  const pl = placeOf(d), fc = forecastFor(d);
+  const wxBox = fc ? `<div class="card" style="background:#EEF3F7;margin:0 0 6px"><b>${fc.icon} Wetter in ${esc(pl.name)}</b>
+      <div style="margin-top:4px">${esc(fc.label)} · ${fc.max}° / ${fc.min}°${fc.rain != null ? ' · Regenrisiko ' + fc.rain + '%' : ''}</div></div>` : '';
+  $('#dlgBody').innerHTML = `${wxBox}<dl class="detail">${rows || '<p class="hint">Keine Angaben.</p>'}</dl>${flHint}
     ${d.unterkunft ? `<p style="margin-top:14px"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.unterkunft.replace(/\(.*?\)/g,'') + ' Australia')}" target="_blank" rel="noopener">📍 Unterkunft in Google Maps öffnen</a></p>` : ''}
     <div class="actions"><button class="btn secondary" data-close>Schliessen</button><button class="btn" id="editBtn">Bearbeiten</button></div>`;
   $('#editBtn').addEventListener('click', () => openEdit(id));
@@ -554,7 +740,7 @@ function openEdit(id){
     <div class="grid2">${f('fahrzeit',L.fahrzeit)}${f('km',L.km)}</div>
     <div class="grid2">${f('besuch',L.besuch)}${f('mietauto',L.mietauto)}</div>
     ${f('unterkunft',L.unterkunft)}${f('fruehstueck',L.fruehstueck)}
-    ${f('bemerkungen',L.bemerkungen)}${f('pendenzen',L.pendenzen)}${f('zusatz',L.zusatz)}${f('notizen',L.notizen)}
+    ${f('bemerkungen',L.bemerkungen)}${f('pendenzen',L.pendenzen)}${f('zusatz',L.zusatz)}${f('notizen',L.notizen)}${f('ort',L.ort)}
     <div class="actions">${d ? '<button class="btn danger" id="delBtn">Löschen</button>' : '<button class="btn secondary" data-close>Abbrechen</button>'}<button class="btn" id="saveBtn">Speichern</button></div>`;
   $('#saveBtn').addEventListener('click', () => {
     const t = d || { id:uid() };
@@ -562,6 +748,7 @@ function openEdit(id){
     if (!t.datum){ toast('Bitte ein Datum angeben'); return; }
     if (!d) state.days.push(t);
     sortDays(); save(); render(); openDetail(t.id); toast('Gespeichert');
+    if (t.ort && !wx.data[t.ort]) refreshWeather(true);
   });
   if (d) $('#delBtn').addEventListener('click', (e) => {
     const b = e.currentTarget;
@@ -574,12 +761,14 @@ function openEdit(id){
 /* ---------- Allgemein ---------- */
 document.addEventListener('click', (e) => { const c = e.target.closest('[data-close]'); if (c) c.closest('dialog').close(); });
 document.querySelectorAll('dialog').forEach(dl => dl.addEventListener('click', (e) => { if (e.target === dl) dl.close(); }));
-document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; render(); window.scrollTo(0,0); }));
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; render(); window.scrollTo(0,0); if (tab === 'wetter') refreshWeather(false); }));
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; if (tab==='daten') renderData(); });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden){ render(); refreshWeather(false); } });
+window.addEventListener('online', () => refreshWeather(false));
 
 render();
 if (tab === 'plan') setTimeout(scrollToday, 50);
+refreshWeather(false);
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
