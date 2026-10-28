@@ -28,6 +28,8 @@
   nav button{background:none;border:0;padding:9px 1px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.66rem;color:var(--muted);min-width:0;overflow:hidden;white-space:nowrap}
   nav button svg{width:23px;height:23px}
   nav button[aria-current="page"]{color:var(--ochre);font-weight:600}
+  nav .ico{position:relative;display:block;height:23px}
+  nav .ico .badge{position:absolute;top:-5px;left:15px}
   .badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--ochre);color:#fff;font-size:.7rem;line-height:18px;text-align:center}
 
   .toolbar{display:flex;gap:8px;margin:4px 0 12px}
@@ -53,6 +55,8 @@
   .chip.car{background:var(--ochre-soft);color:var(--ochre)}
   a.fl{display:inline-block;vertical-align:middle;margin:2px 0 2px 4px;padding:3px 9px;border-radius:999px;background:var(--deep);color:#fff;text-decoration:none;font-size:.76rem;font-weight:600;white-space:nowrap;line-height:1.4}
   a.fl.alt{background:#fff;color:var(--deep);border:1px solid var(--line)}
+  s.old{color:var(--muted);font-weight:400}
+  b.nt{color:#B42318;font-weight:700}
   .rt{white-space:pre-line}
   /* Wetter */
   .wx-now{display:flex;align-items:center;gap:14px}
@@ -68,6 +72,11 @@
   .place .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .place .cur{font-size:1.05rem;font-weight:700;white-space:nowrap}
   .chip.wx{background:#E4EEF5;color:#2F4F6B}
+  .todo-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .done-btn{padding:7px 10px;font-size:.8rem;white-space:nowrap;flex-shrink:0}
+  .done-btn:not(.secondary){background:var(--green)}
+  a.golink{text-decoration:none;font-weight:600}
+  .grp.flash{box-shadow:0 0 0 3px var(--ochre);transition:box-shadow .3s}
   .chip.sc{background:#EAE4F2;color:#5B4580}
   .wx-days div.sel{outline:2px solid var(--ochre);background:#FBEDE5}
   .wx-days div{cursor:pointer}
@@ -129,9 +138,51 @@
   .toast.show{opacity:1}
   .hint{font-size:.85rem;color:var(--muted)}
   .hidden{display:none!important}
+
+  /* Startbildschirm mit Karte */
+  #splash{position:fixed;inset:0;z-index:50;background:radial-gradient(120% 80% at 50% 30%,#2A4D50 0%,#1F3A3D 55%,#152A2C 100%);color:#F5EEE3;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));transition:opacity .6s}
+  #splash.out{opacity:0;pointer-events:none}
+  #splash h1{margin:0;font-size:1.7rem;letter-spacing:.01em}
+  #splash .sp-sub{opacity:.8;font-size:.9rem;margin:4px 0 10px;text-align:center}
+  #splash svg{width:100%;max-width:520px;height:auto;overflow:visible}
+  #splash .land{fill:url(#landGrad);stroke:#E8A26F;stroke-width:.6;opacity:.95}
+  #splash .seg{fill:none;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:spDraw var(--dur) linear var(--del) forwards}
+  #splash .car{stroke:#FFD45E;stroke-width:3.2}
+  #splash .casing{stroke:#3A1A0C;stroke-width:5.6;opacity:.75}
+  #splash .fly{fill:none;stroke:#FFFFFF;stroke-width:1.6;stroke-dasharray:4 3.5;stroke-linecap:round}
+  #splash .pin{opacity:0;animation:spPop .35s ease-out var(--del) forwards}
+  #splash .pin circle{fill:#fff;stroke:#1F3A3D;stroke-width:1.2}
+  #splash .pin text{font-size:10px;fill:#FFF8EC;font-weight:600;paint-order:stroke;stroke:#1F3A3D;stroke-width:2.4px;stroke-linejoin:round}
+  @keyframes spDraw{to{stroke-dashoffset:0}}
+  @keyframes spPop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+  #splash .pin{transform-box:fill-box;transform-origin:center}
+  #splash .sp-leg{min-height:1.4em;font-weight:700;color:#FFD45E;font-size:1rem;text-align:center;margin-bottom:4px;transition:opacity .2s}
+  #splash .sp-legend{display:flex;gap:20px;font-size:.85rem;margin-top:10px;opacity:.9}
+  #splash .sp-legend i{display:inline-block;width:26px;height:0;vertical-align:middle;margin-right:6px}
+  #splash .sp-legend .lc{border-top:3px solid #F6C453}
+  #splash .sp-legend .lf{border-top:2px dashed #fff}
+  #splash .sp-bar{width:min(240px,60vw);height:3px;border-radius:2px;background:rgba(255,255,255,.18);margin-top:18px;overflow:hidden}
+  #splash .sp-bar div{height:100%;width:0;background:#F6C453;animation:spBar var(--total) linear forwards}
+  @keyframes spBar{to{width:100%}}
+  #splash .sp-skip{margin-top:14px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:8px 18px;font-weight:600}
+  @media (prefers-reduced-motion: reduce){ #splash .seg{animation:none;stroke-dashoffset:0} #splash .pin{animation:none;opacity:1} }
 </style>
 </head>
 <body>
+<div id="splash" class="hidden" role="dialog" aria-label="Reiseroute">
+  <h1 id="spTitle">Australien 2027</h1>
+  <div class="sp-sub" id="spSub"></div>
+  <div class="sp-leg" id="spLeg">&nbsp;</div>
+  <svg id="spMap" viewBox="-14 -24 392 368" aria-hidden="true">
+    <defs><linearGradient id="landGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9673A"/><stop offset="1" stop-color="#9E4423"/></linearGradient></defs>
+    <path class="land" d="M264.9,16.0L264.2,18.1L264.3,19.4L265.5,20.3L266.8,22.7L267.2,24.8L267.7,27.1L267.9,29.1L268.4,30.5L268.1,33.3L268.4,34.5L269.4,37.5L269.8,39.2L271.6,40.3L272.9,39.7L273.7,38.8L276.0,38.1L277.0,39.3L277.5,40.6L279.8,42.4L281.1,43.5L283.1,45.0L282.8,46.5L283.1,48.7L282.9,50.1L283.6,52.3L283.8,54.1L284.5,55.8L284.5,57.5L284.2,59.2L284.8,60.4L286.1,62.3L287.1,63.8L288.4,64.1L288.3,65.6L289.6,68.6L290.3,71.1L289.8,74.4L289.4,76.3L291.1,79.6L291.9,81.1L291.8,82.8L292.5,84.1L293.4,85.1L295.2,86.1L296.4,86.6L297.9,86.8L299.0,88.1L300.3,88.3L301.5,88.0L302.2,88.9L302.9,90.3L304.3,91.8L305.8,92.7L307.2,93.0L309.6,94.8L311.0,95.0L313.0,96.8L314.1,98.6L312.8,98.5L313.3,101.1L314.4,102.2L315.6,103.3L316.9,104.9L317.2,106.1L317.9,108.3L319.0,109.3L319.1,111.1L319.6,113.6L320.2,115.9L321.2,117.6L323.1,118.2L323.3,116.4L323.6,115.1L325.0,115.9L325.8,117.0L327.2,117.9L328.4,118.8L328.7,117.1L330.3,118.9L330.5,122.1L330.5,124.8L331.0,127.5L332.3,128.9L333.1,129.8L334.4,131.0L336.7,132.9L338.3,133.1L339.6,133.9L341.5,137.5L343.5,139.5L344.9,140.5L345.3,142.1L346.7,144.4L347.8,145.1L348.9,146.6L349.0,149.1L349.5,150.3L350.7,151.4L350.4,155.1L351.0,161.6L350.7,163.7L351.3,165.7L353.0,169.3L353.3,170.5L353.6,172.0L354.6,173.8L354.5,176.7L355.0,178.0L354.9,179.8L353.6,181.7L352.7,184.0L352.6,186.0L352.0,189.8L351.3,192.5L349.9,196.3L349.9,197.8L350.0,199.7L349.8,201.4L349.5,202.6L349.2,204.8L347.8,208.2L345.8,210.7L345.7,212.6L345.1,214.5L343.9,215.7L342.9,216.8L340.6,218.2L339.4,219.0L338.1,220.9L337.0,222.9L336.1,225.0L334.9,225.6L334.9,228.0L334.5,229.5L333.2,231.2L332.0,232.5L331.3,234.5L330.8,236.9L330.5,238.3L330.4,239.5L330.0,240.6L328.6,241.4L327.0,245.0L325.4,247.4L325.1,248.7L324.9,250.2L324.6,252.6L324.3,254.3L323.6,256.0L323.4,257.2L323.3,259.5L323.6,261.2L323.4,263.0L322.1,264.0L320.0,265.8L317.7,266.5L314.6,266.3L308.7,266.7L305.4,267.8L303.3,268.9L301.2,270.5L296.6,274.8L293.0,275.3L291.7,275.2L291.7,276.5L292.9,276.3L293.4,277.9L293.1,279.2L291.4,277.7L290.6,276.8L289.4,276.8L288.0,275.9L287.4,274.9L285.8,274.8L284.0,273.6L284.6,272.4L284.7,270.7L283.1,270.7L282.2,272.1L280.2,273.2L278.1,271.7L279.8,271.7L280.7,270.9L281.6,269.3L280.5,267.9L276.6,269.1L275.4,269.7L277.0,269.9L276.6,271.1L274.8,271.8L272.8,272.9L270.3,275.2L269.2,275.8L268.0,276.4L266.2,275.7L264.0,274.7L261.9,274.0L260.0,272.8L258.6,272.1L256.3,272.3L254.0,271.1L252.3,271.0L251.2,272.1L249.7,271.9L247.9,270.1L246.1,269.1L242.8,268.7L240.8,267.4L239.2,264.9L236.3,262.1L235.5,261.1L235.1,259.3L235.5,257.8L236.1,256.3L235.1,252.6L233.5,249.9L230.9,247.3L229.1,246.0L228.5,244.9L229.7,244.6L231.3,245.2L231.3,244.0L230.4,242.7L228.9,243.6L227.7,244.5L226.4,244.7L224.6,245.6L221.7,245.3L222.3,244.0L223.6,242.5L224.5,239.6L224.4,237.0L222.4,233.9L221.7,232.6L220.9,231.3L220.3,232.9L219.4,234.0L219.0,236.7L217.5,240.7L215.5,240.6L213.9,241.1L212.8,241.6L211.2,241.8L211.6,238.5L213.7,238.5L215.4,237.0L215.8,235.4L215.5,233.3L215.7,232.1L217.1,228.3L218.3,226.8L219.6,225.6L219.0,223.0L219.5,221.5L219.4,217.7L218.3,215.9L218.3,218.2L217.4,219.7L216.2,220.8L215.3,221.8L214.6,224.1L213.6,226.0L211.8,226.9L209.7,228.0L208.4,228.6L207.4,229.5L203.9,233.8L202.7,235.1L201.9,236.0L202.8,238.8L201.1,238.0L199.8,238.7L198.4,237.0L197.0,235.9L195.9,235.2L197.5,235.4L197.4,233.3L196.9,231.5L196.1,229.2L194.6,227.5L193.3,226.0L192.9,224.3L192.4,223.1L190.9,221.8L188.2,221.5L187.1,219.7L186.5,217.5L187.8,216.6L185.0,214.2L183.8,212.9L182.7,212.3L180.4,212.1L178.8,212.0L174.9,209.8L171.1,210.4L165.9,207.3L163.1,205.9L161.0,205.4L159.3,206.0L157.8,206.4L152.2,206.2L147.3,206.6L144.1,207.0L142.0,207.4L138.5,209.2L134.4,210.9L131.0,211.7L127.9,212.8L125.9,213.1L123.3,213.3L117.7,212.7L115.8,213.1L112.8,215.2L110.2,216.2L105.8,218.8L103.8,219.4L102.5,219.5L101.4,220.1L100.4,221.2L99.0,224.3L98.1,225.7L96.2,228.0L95.0,228.8L93.8,228.7L92.4,229.5L91.2,228.7L88.7,228.6L83.3,229.6L82.5,228.4L79.7,228.3L76.9,228.0L71.8,228.4L69.3,228.8L66.6,229.0L63.5,229.4L62.4,230.0L60.0,233.2L58.3,234.1L56.8,234.1L55.2,234.3L52.0,236.8L48.7,239.2L46.3,239.8L44.7,240.1L40.1,239.6L37.7,239.6L34.7,239.2L32.1,238.0L30.1,237.3L27.8,234.7L26.5,233.8L24.0,232.6L22.7,232.9L21.7,232.1L21.3,230.1L21.4,227.7L21.5,224.9L23.1,226.2L24.7,226.1L26.0,225.1L26.8,223.6L27.5,221.8L27.4,220.0L26.9,216.7L27.7,215.8L27.8,214.1L28.0,209.2L27.6,207.3L25.5,203.5L24.1,200.2L23.1,198.7L22.2,196.3L21.5,193.0L21.3,191.3L21.1,188.2L21.3,186.4L20.4,182.6L18.4,180.0L18.1,178.0L17.6,176.8L16.0,174.4L14.4,172.3L13.8,167.1L13.2,165.2L10.4,160.3L7.2,156.2L6.3,154.5L7.3,153.3L9.0,156.4L9.3,157.5L10.7,157.9L11.5,157.0L11.7,155.3L10.4,154.3L9.4,153.1L8.8,151.1L7.7,149.3L8.2,148.2L9.7,149.5L10.5,150.5L10.3,152.2L10.6,153.4L11.7,152.3L12.5,154.6L13.7,155.9L14.8,154.9L14.7,153.3L14.9,151.8L12.9,147.7L11.2,144.0L10.1,142.2L9.2,139.4L7.9,137.0L7.9,135.2L8.5,131.5L9.1,130.1L10.8,127.1L10.9,125.8L11.2,123.3L10.9,121.2L10.2,119.6L11.2,116.6L12.6,112.8L14.0,111.7L13.8,115.1L14.4,116.5L14.2,118.0L15.6,117.5L16.6,115.9L18.1,112.8L19.1,111.6L20.4,110.8L23.0,109.8L25.5,108.4L26.7,107.1L28.2,106.0L29.3,104.8L30.3,104.0L35.5,100.9L37.4,100.3L38.8,100.4L40.1,100.2L41.4,100.9L44.7,100.2L46.0,99.5L48.2,98.0L51.4,97.1L54.0,96.5L57.0,93.9L59.2,94.1L61.2,94.4L62.7,93.6L66.4,93.1L68.5,92.5L72.3,90.7L74.9,88.9L76.3,87.4L77.6,85.3L78.5,83.5L79.6,81.0L80.1,79.8L82.1,78.4L84.3,76.2L85.1,75.0L84.1,74.3L83.7,71.9L83.3,70.2L83.4,68.0L84.3,66.2L85.7,64.6L87.2,63.6L88.2,62.9L89.3,60.6L89.9,59.4L91.3,62.2L91.9,63.6L93.0,65.3L93.9,67.8L94.8,68.9L95.5,70.0L95.9,67.1L95.7,65.7L97.1,65.9L98.2,64.1L97.1,63.0L95.9,61.7L95.1,60.5L96.1,59.3L95.9,57.4L98.0,58.9L99.0,58.0L100.4,57.9L101.9,59.0L103.2,58.9L105.3,59.0L103.2,58.5L102.6,57.2L103.7,56.4L104.5,54.6L104.9,53.3L103.6,55.0L103.2,53.8L102.7,51.6L103.1,50.3L104.9,49.6L105.3,48.2L107.7,49.5L108.6,48.5L107.1,48.6L106.5,47.1L107.7,46.6L109.5,46.0L111.0,46.7L110.0,45.0L109.5,43.5L110.2,42.1L111.7,41.3L112.9,40.5L113.1,38.5L113.8,39.6L113.6,41.0L115.0,40.4L115.3,41.6L116.7,40.6L116.9,38.6L117.5,37.0L117.0,35.6L118.5,36.9L120.0,36.0L121.5,37.4L123.3,35.4L123.3,33.8L125.2,33.7L127.7,35.2L129.1,36.2L131.0,37.7L131.8,38.7L132.8,40.5L135.4,42.7L134.9,44.8L134.5,46.4L134.4,48.7L135.2,47.7L135.3,46.5L136.3,45.0L137.3,44.3L138.8,43.4L143.0,44.4L143.9,45.4L144.0,46.7L144.5,44.6L145.7,44.5L147.3,46.0L147.7,44.8L149.1,44.0L148.2,42.8L148.5,41.4L146.6,40.6L145.7,39.7L146.4,37.9L147.8,36.2L148.6,35.1L149.3,33.1L149.7,31.7L151.7,30.8L152.8,29.9L152.3,27.6L152.5,25.7L153.8,25.0L154.5,23.1L156.0,22.9L156.4,21.2L157.4,20.6L158.6,21.9L158.6,20.0L159.9,19.8L159.9,18.5L161.6,18.2L162.2,17.1L162.7,18.5L166.0,19.2L167.4,18.7L168.9,19.2L170.5,18.3L171.9,19.3L172.8,17.8L174.2,17.7L173.8,16.0L173.9,13.8L172.5,11.5L170.7,11.3L169.5,11.6L167.9,10.2L166.7,9.4L168.0,8.5L169.3,9.5L170.6,8.8L173.2,10.3L174.2,11.7L175.7,10.6L177.2,11.2L178.0,12.8L180.1,13.8L181.6,14.7L184.8,14.8L186.8,15.9L188.6,16.7L190.3,17.1L191.9,16.3L193.0,17.5L194.5,18.3L196.1,18.6L197.3,17.7L199.0,17.1L200.2,16.1L201.9,14.7L201.5,16.0L200.3,17.9L201.6,18.2L202.9,18.3L203.2,19.7L204.5,20.7L205.7,19.4L205.0,18.1L206.7,16.0L208.1,17.8L209.1,18.7L210.6,18.8L207.5,24.1L207.8,25.3L206.9,28.4L205.4,27.5L202.3,29.1L202.3,32.2L202.8,34.0L202.5,35.2L201.9,37.3L200.7,38.6L198.9,41.5L197.8,43.2L198.2,44.8L201.4,47.1L202.6,48.2L204.7,49.4L205.4,51.1L206.9,51.9L208.2,52.3L208.9,53.6L210.8,54.2L212.3,54.7L214.1,55.9L216.1,56.8L217.6,57.5L219.4,59.8L220.8,61.2L222.3,62.2L224.5,62.9L227.2,63.6L228.9,63.9L229.7,65.1L230.1,66.5L230.9,68.1L232.6,68.6L234.7,70.1L236.5,70.8L237.7,71.7L239.2,71.7L241.8,71.0L243.0,70.2L244.6,68.9L245.3,66.8L245.7,65.1L247.9,61.5L248.6,59.7L249.1,57.4L249.6,55.9L249.4,54.3L249.9,51.4L251.1,47.4L251.5,46.1L251.2,44.1L250.6,40.4L250.9,39.1L251.2,37.3L250.7,36.0L250.1,33.9L250.6,31.5L251.1,30.3L251.6,28.7L251.3,25.6L252.4,24.5L253.6,24.0L253.6,22.4L252.5,21.6L252.0,19.9L253.0,17.2L254.3,17.0L254.3,15.5L255.0,12.9L255.9,9.4L256.1,6.3L257.5,5.7L258.6,3.9L259.9,4.3L259.4,5.6L260.9,6.9L261.6,8.9L262.0,11.0L262.0,12.9L262.2,14.7L263.2,15.7L264.9,16.0ZM350.3,149.7L349.5,147.8L350.1,145.9L350.0,144.3L351.3,143.1L351.7,141.7L350.9,140.6L351.8,139.8L352.2,141.6L352.7,143.0L350.9,147.4L350.4,149.0ZM209.0,34.0L210.2,33.4L210.2,34.8L209.3,36.6L210.5,37.8L209.5,38.5L206.9,38.1L206.4,36.0L206.5,34.5L207.9,33.1L209.0,34.0ZM155.0,13.4L156.3,14.3L153.8,14.3L152.2,14.8L151.7,13.4L152.7,12.0L153.2,10.3L154.3,10.9L154.8,12.5ZM156.4,10.4L159.0,9.8L160.9,9.3L162.0,8.6L163.5,9.8L164.2,10.8L163.7,12.5L162.2,13.7L159.3,15.8L156.6,14.0L155.5,12.8L154.7,11.1L154.6,9.7L155.9,9.7ZM216.6,246.5L218.7,246.7L220.5,246.6L220.7,248.0L218.7,247.7L217.3,248.0L216.6,249.3L215.4,249.7L213.3,248.8L211.7,249.2L209.4,249.3L208.0,248.4L207.9,247.1L212.3,245.8L214.4,245.1L216.1,245.2L216.7,246.3ZM281.0,295.4L282.5,295.2L283.6,295.8L284.8,296.0L286.5,296.9L287.7,297.7L290.2,298.6L292.0,299.0L294.2,298.8L295.5,298.2L296.5,299.1L297.1,297.6L298.8,297.4L300.2,297.1L301.8,297.5L302.8,296.2L304.9,296.2L306.2,295.3L308.3,296.0L308.9,298.6L309.2,300.8L309.0,302.8L309.0,305.4L309.1,307.2L309.3,308.7L308.1,307.8L307.1,308.8L306.5,310.5L306.3,312.0L305.7,313.5L305.8,315.1L306.1,316.4L306.3,318.4L305.1,318.7L303.9,318.0L303.8,316.6L302.8,315.3L302.6,316.6L301.4,315.8L300.4,314.8L300.8,316.1L300.1,317.5L299.9,318.9L297.8,318.4L298.5,319.5L297.5,321.7L296.7,322.8L295.2,322.7L293.9,321.8L290.8,321.8L289.6,322.1L289.1,320.8L290.2,320.3L289.0,319.5L287.5,319.2L286.5,317.6L285.5,316.5L282.9,312.4L282.3,309.4L283.8,310.4L284.6,311.9L285.0,310.6L283.7,309.4L282.8,308.2L281.0,305.5L279.8,303.7L278.7,301.5L278.0,299.3L277.5,297.3L278.1,295.4L281.0,295.4ZM271.3,288.9L271.0,287.6L270.8,286.1L270.9,284.9L271.5,283.7L272.7,284.3L273.0,285.7L273.2,287.3L272.3,288.5ZM306.5,285.4L308.0,287.2L309.0,288.4L308.3,290.0L306.9,289.8L305.5,287.9L304.9,286.9L305.9,285.1Z"/>
+    <g id="spSegs"></g><g id="spPins"></g>
+  </svg>
+  <div class="sp-legend"><span><i class="lc"></i>Auto</span><span><i class="lf"></i>Flug</span></div>
+  <div class="sp-bar"><div></div></div>
+  <button class="sp-skip" id="spSkip">Weiter zum Plan ›</button>
+</div>
 <header>
   <h1 id="title">Australien 2027</h1>
   <div class="sub" id="subtitle">Reiseplan</div>
@@ -143,7 +194,7 @@
   <button data-tab="plan" aria-current="page">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Plan</button>
   <button data-tab="offen">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>Offen <span id="todoBadge" class="badge hidden"></span></span></button>
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span id="todoBadge" class="badge hidden"></span></span>Pendenzen</button>
   <button data-tab="wetter">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.5M2.5 8H1M3.6 3.6l1 1M12.4 3.6l-1 1"/><path d="M8 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.5A3.3 3.3 0 0 0 8 20z"/></svg>Wetter</button>
   <button data-tab="sehen">
@@ -205,8 +256,8 @@ let installEvt = null;
 
 /* ---------- Speicher ---------- */
 function load(){
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.days)){ s.sights = s.sights || []; return s; } } catch(e){}
-  return { title:'Australien 2027', days:[], sights:[], importedAt:null, changedAt:null };
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.days)){ s.sights = s.sights || []; s.done = s.done || []; return s; } } catch(e){}
+  return { title:'Australien 2027', days:[], sights:[], done:[], importedAt:null, changedAt:null };
 }
 function save(){
   state.changedAt = new Date().toISOString();
@@ -242,13 +293,65 @@ function flightsOf(d){
   return out;
 }
 // Text mit Flugstatus-Knöpfen direkt hinter der Zeile, in der der Flug steht
-function richText(text, full){
+function richText(text, full, d){
   return String(text||'').split('\n').map(line => {
     const codes = flightCodesInLine(line);
-    return esc(line) + codes.map(f =>
+    let html = esc(line);
+    // geänderte Flugzeiten: Original durchgestrichen, neue Zeit daneben
+    const upd = d && codes.length ? flightUpd(d, codes[0]) : null;
+    if (upd){
+      const mark = (re, neu) => { if (!neu) return; let hit = false;
+        html = html.replace(re, (m, pre, old) => { hit = true; return old === neu ? m : `${pre}<s class="old">${old}</s> <b class="nt">${esc(neu)}</b>`; });
+        if (!hit) html += ` <b class="nt">(neu: ${esc(neu)})</b>`; };
+      mark(/(Abflug\s+)(\d{1,2}:\d{2})/i, upd.dep);
+      mark(/(Ankunft\s+[^\d<]*?)(\d{1,2}:\d{2})/i, upd.arr);
+    }
+    return html + codes.map(f =>
       ` <a class="fl" href="${statusUrl(f)}" target="_blank" rel="noopener" data-stop>✈ Status ${esc(f)}</a>` +
+      (d ? ` <a class="fl alt" href="#" data-stop data-fupd="${esc(f)}" data-fday="${d.id}">🔄 Zeit</a>` : '') +
       (full ? ` <a class="fl alt" href="${radarUrl(f)}" target="_blank" rel="noopener" data-stop>Radar</a>` : '')).join('');
   }).join('\n');
+}
+
+/* ---------- Flugzeiten manuell aktualisieren ---------- */
+const fKey = (d, code) => (d.datum || '') + '|' + code;
+function flightUpd(d, code){ const u = (state.flightUpd || {})[fKey(d, code)]; return u && (u.dep || u.arr) ? u : null; }
+function flightOrig(d, code){
+  const line = ['was','bemerkungen','zusatz','notizen'].map(k => String(d[k] || '').split('\n')).flat().find(l => flightCodesInLine(l).includes(code)) || '';
+  const dep = (line.match(/Abflug\s+(\d{1,2}:\d{2})/i) || [])[1] || '';
+  const arr = (line.match(/Ankunft\s+[^\d]*?(\d{1,2}:\d{2})/i) || [])[1] || '';
+  return { line, dep, arr };
+}
+function openFlightUpd(dayId, code, backToDetail){
+  const d = state.days.find(x => x.id === dayId); if (!d) return;
+  const o = flightOrig(d, code), u = (state.flightUpd || {})[fKey(d, code)] || {};
+  $('#dlgTitle').textContent = '✈ ' + code + ' – Zeiten aktualisieren';
+  $('#dlgBody').innerHTML = `
+    <p class="hint" style="margin-top:0">${esc(fmtLong(d.datum))}<br>${esc(o.line)}</p>
+    <p><b>1.</b> Aktuelle Zeiten nachschauen:</p>
+    <a class="btn block" style="display:block;text-align:center;text-decoration:none" href="${statusUrl(code)}" target="_blank" rel="noopener">✈ Live-Status ${esc(code)} öffnen</a>
+    <p style="margin-top:16px"><b>2.</b> Neue Zeiten eintragen (leer lassen = unverändert):</p>
+    <div class="grid2">
+      <div class="field"><label for="fu_dep">Abflug${o.dep ? ' (Original ' + esc(o.dep) + ')' : ''}</label><input id="fu_dep" type="time" value="${esc(u.dep || '')}"></div>
+      <div class="field"><label for="fu_arr">Ankunft${o.arr ? ' (Original ' + esc(o.arr) + ')' : ''}</label><input id="fu_arr" type="time" value="${esc(u.arr || '')}"></div>
+    </div>
+    ${u.at ? `<p class="hint">Zuletzt geändert: ${esc(new Date(u.at).toLocaleString('de-CH', { dateStyle:'short', timeStyle:'short' }))}</p>` : ''}
+    <div class="actions">${u.dep || u.arr ? '<button class="btn secondary" id="fuReset">Original-Zeiten</button>' : '<button class="btn secondary" data-close>Abbrechen</button>'}<button class="btn" id="fuSave">Speichern</button></div>`;
+  const done = (msg) => { save(); render(); if (backToDetail) openDetail(dayId); else $('#dlg').close(); toast(msg); };
+  $('#fuSave').addEventListener('click', () => {
+    state.flightUpd = state.flightUpd || {};
+    const dep = $('#fu_dep').value, arr = $('#fu_arr').value;
+    if (!dep && !arr) delete state.flightUpd[fKey(d, code)];
+    else state.flightUpd[fKey(d, code)] = { dep, arr, at:new Date().toISOString() };
+    done('Flugzeiten gespeichert');
+  });
+  const r = $('#fuReset'); if (r) r.addEventListener('click', () => { delete state.flightUpd[fKey(d, code)]; done('Original-Zeiten wiederhergestellt'); });
+  const dlg = $('#dlg'); if (!dlg.open) dlg.showModal();
+}
+function bindFlightUpd(root, backToDetail){
+  root.querySelectorAll('[data-fupd]').forEach(a => a.addEventListener('click', (e) => {
+    e.preventDefault(); e.stopPropagation(); openFlightUpd(a.dataset.fday, a.dataset.fupd, backToDetail);
+  }));
 }
 // Frühstück als farbiges Etikett: gebucht = grün, nein = grau, sonst (z.B. «zusätzlich») = orange
 function breakfastChip(v){
@@ -373,6 +476,21 @@ $('#sheetOk').addEventListener('click', () => {
     const sName = pendingWb.SheetNames.find(n => /sehensw/i.test(n) && n !== name);
     let sMsg = '';
     if (sName){ state.sights = importSights(pendingWb.Sheets[sName]); sMsg = ', ' + state.sights.length + ' Sehenswürdigkeiten'; }
+    // erledigte Pendenzen: nur übernehmen, wenn die Datei das Register enthält
+    const dName = pendingWb.SheetNames.find(n => /erledigt/i.test(n) && n !== name);
+    if (dName){
+      const rows = XLSX.utils.sheet_to_json(pendingWb.Sheets[dName], { header:1, raw:true, defval:'' }).slice(1);
+      state.done = rows.filter(r => clean(r[1])).map(r => todoKey(toISO(r[0]), clean(r[1])));
+    }
+    // geänderte Flugzeiten: nur übernehmen, wenn die Datei das Register enthält
+    const fName = pendingWb.SheetNames.find(n => /flugzeit/i.test(n) && n !== name);
+    if (fName){
+      const rows = XLSX.utils.sheet_to_json(pendingWb.Sheets[fName], { header:1, raw:false, defval:'' }).slice(1);
+      state.flightUpd = {};
+      rows.filter(r => clean(r[1])).forEach(r => {
+        state.flightUpd[toISO(clean(r[0])) + '|' + clean(r[1]).replace(/\s/g,'')] = { dep:clean(r[2]), arr:clean(r[3]), at:clean(r[4]) || null };
+      });
+    }
     sortDays(); save();
     $('#sheetDlg').close(); pendingWb = null;
     tab = 'plan'; render();
@@ -402,6 +520,14 @@ function buildWorkbook(){
   const ws2 = XLSX.utils.aoa_to_sheet(sd);
   ws2['!cols'] = [30,30,50,40,8].map(w => ({ wch:w }));
   XLSX.utils.book_append_sheet(wb, ws2, 'Sehenswürdigkeiten');
+  const dd = [['Datum', 'Pendenz'], ...(state.done || []).map(k => { const i = k.indexOf('|'); const iso = k.slice(0, i);
+    return [iso ? iso.split('-').reverse().join('.') : '', k.slice(i + 1)]; })];
+  const ws3 = XLSX.utils.aoa_to_sheet(dd); ws3['!cols'] = [{ wch:12 }, { wch:70 }];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Pendenzen erledigt');
+  const fu = [['Datum', 'Flug', 'Abflug neu', 'Ankunft neu', 'Geändert'], ...Object.entries(state.flightUpd || {}).map(([k, u]) => {
+    const [iso, code] = k.split('|'); return [iso.split('-').reverse().join('.'), code, u.dep || '', u.arr || '', u.at || '']; })];
+  const ws4 = XLSX.utils.aoa_to_sheet(fu); ws4['!cols'] = [{ wch:12 }, { wch:10 }, { wch:12 }, { wch:12 }, { wch:24 }];
+  XLSX.utils.book_append_sheet(wb, ws4, 'Flugzeiten aktuell');
   return wb;
 }
 function exportBlob(){
@@ -416,12 +542,17 @@ function doDownload(){
 }
 
 /* ---------- Pendenzen ("buchen" usw.) ---------- */
-function todos(){
-  const list = [];
+// Pendenz-Schlüssel = Datum + Text, damit «erledigt» auch nach einem neuen Import bestehen bleibt
+const todoKey = (datum, text) => (datum || '') + '|' + text;
+function todos(includeDone){
+  const list = [], done = new Set(state.done || []);
   state.days.forEach(d => {
     ['was','bemerkungen','pendenzen','mietauto','zusatz','notizen'].forEach(k => {
       String(d[k]||'').split('\n').forEach(line => {
-        if (/buchen|reservier|organisier|abklären|\?\s*$/i.test(line) && !/gebucht/i.test(line)) list.push({ day:d, text:line.trim() });
+        if (/buchen|reservier|organisier|abklären|\?\s*$/i.test(line) && !/gebucht/i.test(line)){
+          const key = todoKey(d.datum, line.trim());
+          if (includeDone ? done.has(key) : !done.has(key)) list.push({ day:d, text:line.trim(), key });
+        }
       });
     });
   });
@@ -460,23 +591,25 @@ function dayCard(d, idx, first){
   const dt = d.datum ? parseISO(d.datum) : null;
   const num = d.datum && first ? 'Tag ' + (dayDiff(first, d.datum) + 1) : '';
   const chips = [];
-  if (d.status) chips.push(`<span class="chip ${/gebucht/i.test(d.status)?'ok':''}">${esc(d.status)}</span>`);
+  // Spalte neben dem Datum (z.B. «gebucht» an Flugtagen) = Buchungsstatus des Flugs
+  if (d.status) chips.push(`<span class="chip ${/gebucht/i.test(d.status)?'ok':''}">${flightsOf(d).length ? '✈ Flug ' : ''}${esc(d.status)}</span>`);
   if (d.fahrzeit) chips.push(`<span class="chip">🚗 ${esc(d.fahrzeit)} h</span>`);
   if (d.km) chips.push(`<span class="chip">${esc(d.km)} km</span>`);
   const fc = forecastFor(d);
   if (fc) chips.unshift(`<span class="chip wx">${fc.icon} ${fc.max}° / ${fc.min}°${fc.rain != null ? ' · 💧' + fc.rain + '%' : ''}</span>`);
   if (d.mietauto) chips.push(`<span class="chip car">Mietauto</span>`);
   const nt = todos().filter(x => x.day === d).length;
-  if (nt) chips.push(`<span class="chip todo">${nt} offen</span>`);
+  if (nt) chips.push(`<span class="chip todo">${nt} ${nt === 1 ? 'Pendenz' : 'Pendenzen'}</span>`);
   const ns = sightsForDay(d).length;
-  if (ns) chips.push(`<span class="chip sc">📍 ${ns} Sehenswürdigkeit${ns === 1 ? '' : 'en'}</span>`);
+  if (ns){ const pl = placeOf(d); const key = (pl && pl.name !== 'Mailand' && state.sights.some(s => s.wo === pl.name)) ? pl.name : routeOf(d);
+    chips.push(`<a class="chip sc golink" href="#" data-stop data-goto="${esc(key || '')}">📍 ${ns} Sehenswürdigkeit${ns === 1 ? '' : 'en'} ›</a>`); }
   const rest = String(d.was||'').split('\n').slice(1).join('\n');
   return `<div class="day${cls}" data-id="${d.id}">
     <div class="date">${dt ? `<div class="wd">${WD[dt.getDay()]}</div><div class="d">${dt.getDate()}</div><div class="m">${MON[dt.getMonth()]}</div><div class="n">${num}</div>` : '<div class="wd">–</div>'}</div>
     <div>
       ${d.datum === t ? '<div class="today-label">Heute</div>' : ''}
-      <div class="was">${firstLine(d.was) ? richText(firstLine(d.was)) : '(ohne Titel)'}</div>
-      ${rest ? `<div class="stay rt">${richText(rest)}</div>` : ''}
+      <div class="was">${firstLine(d.was) ? richText(firstLine(d.was), false, d) : '(ohne Titel)'}</div>
+      ${rest ? `<div class="stay rt">${richText(rest, false, d)}</div>` : ''}
       ${d.unterkunft ? `<div class="stay">🛏 ${esc(d.unterkunft)}</div>` : ''}
       ${chips.length ? `<div class="meta">${chips.join('')}</div>` : ''}
     </div>
@@ -499,18 +632,39 @@ function renderPlan(){
   $('#addDay').addEventListener('click', () => openEdit(null));
   if (hasToday) $('#goToday').addEventListener('click', scrollToday);
   main.querySelectorAll('.day').forEach(el => el.addEventListener('click', (e) => { if (e.target.closest('[data-stop]')) return; openDetail(el.dataset.id); }));
+  main.querySelectorAll('[data-goto]').forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); gotoSights(a.dataset.goto); }));
+  bindFlightUpd(main, false);
+}
+// Zum Bereich «Sehenswert» springen und die passende Gruppe hervorheben
+function gotoSights(key){
+  const dlg = $('#dlg'); if (dlg.open) dlg.close();
+  tab = 'sehen'; render();
+  const el = [...document.querySelectorAll('[data-group]')].find(x => x.dataset.group === key);
+  if (el){ el.scrollIntoView({ block:'start' }); window.scrollBy(0, -80); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600); }
+  else window.scrollTo(0, 0);
 }
 function scrollToday(){ const el = document.querySelector('.day.today'); if (el) el.scrollIntoView({ behavior:'smooth', block:'center' }); }
 
 function renderTodos(){
   const main = $('#main');
   if (!state.days.length){ main.innerHTML = emptyState(); return; }
-  const list = todos();
-  main.innerHTML = `<div class="card"><h2>Noch zu buchen / erledigen</h2>
-    <p class="hint">Erkannt an Wörtern wie «buchen», «reservieren» oder «abklären». Ändere den Text eines Tages (z.B. zu «gebucht»), dann verschwindet der Eintrag.</p>
-    ${list.length ? list.map((t,i) => `<div class="todo-item" data-id="${t.day.id}"><small>${esc(fmtLong(t.day.datum))}</small><div>${esc(t.text)}</div></div>`).join('') : '<p>Alles erledigt 🎉</p>'}
-  </div>`;
-  main.querySelectorAll('.todo-item').forEach(el => el.addEventListener('click', () => openDetail(el.dataset.id)));
+  const list = todos(), done = todos(true);
+  main.innerHTML = `<div class="card"><h2>Pendenzen</h2>
+    <p class="hint">Erkannt an Wörtern wie «buchen», «reservieren» oder «abklären». Mit «Erledigt» verschwindet die Pendenz aus der Liste – der Reiseplan selbst bleibt unverändert.</p>
+    ${list.length ? list.map(t => `<div class="todo-item" data-id="${t.day.id}">
+        <div class="todo-row"><div><small>${esc(fmtLong(t.day.datum))}</small><div>${esc(t.text)}</div></div>
+        <button class="btn done-btn" data-done="${esc(t.key)}">✓ Erledigt</button></div></div>`).join('') : '<p>Alles erledigt 🎉</p>'}
+  </div>
+  ${done.length ? `<div class="card"><h2 style="color:var(--muted)">Erledigt (${done.length})</h2>
+    ${done.map(t => `<div class="todo-item"><div class="todo-row"><div><small>${esc(fmtLong(t.day.datum))}</small><div style="text-decoration:line-through;color:var(--muted)">${esc(t.text)}</div></div>
+      <button class="btn secondary done-btn" data-undo="${esc(t.key)}">Zurück</button></div></div>`).join('')}</div>` : ''}`;
+  main.querySelectorAll('.todo-item[data-id]').forEach(el => el.addEventListener('click', (e) => { if (!e.target.closest('button')) openDetail(el.dataset.id); }));
+  main.querySelectorAll('[data-done]').forEach(b => b.addEventListener('click', () => {
+    state.done = state.done || []; state.done.push(b.dataset.done); save(); render(); toast('Pendenz erledigt');
+  }));
+  main.querySelectorAll('[data-undo]').forEach(b => b.addEventListener('click', () => {
+    state.done = (state.done || []).filter(k => k !== b.dataset.undo); save(); render();
+  }));
 }
 
 function renderStays(){
@@ -527,21 +681,14 @@ function renderStays(){
     const cur = groups[groups.length-1];
     if (d.fruehstueck && !cur.fr.includes(d.fruehstueck)) cur.fr.push(d.fruehstueck);
   });
-  const km = state.days.reduce((s,d) => s + (Number(d.km) || 0), 0);
-  const drive = state.days.reduce((s,d) => s + driveMinutes(d.fahrzeit), 0);
-  const nights = groups.reduce((s,g) => s + g.nights, 0);
-  main.innerHTML = `<div class="stats">
-      <div class="stat"><b>${nights}</b><span>Nächte</span></div>
-      <div class="stat"><b>${km.toLocaleString('de-CH')}</b><span>km Auto</span></div>
-      <div class="stat"><b>${Math.floor(drive/60)}:${String(drive%60).padStart(2,'0')}</b><span>h Fahrzeit</span></div>
-    </div>
-    <div class="card"><h2>Unterkünfte</h2>
-      ${groups.map(g => `<div class="row" data-id="${g.first.id}"><div><div class="l">${esc(g.full)}</div>
-        <div class="hint">${esc(fmtLong(g.first.datum))}</div>
-        <div style="margin-top:4px">${g.fr.length ? g.fr.map(breakfastChip).join(' ') : '<span class="chip">☕ Frühstück: keine Angabe</span>'}</div></div>
-        <div class="r">${g.nights} ${g.nights===1?'Nacht':'Nächte'}</div></div>`).join('')}
+  main.innerHTML = `<div class="card"><h2>Unterkünfte</h2>
+      ${groups.map(g => `<div class="row"><div><div class="l">${esc(g.full)}</div>
+        <div style="margin-top:5px">${g.fr.length ? g.fr.map(breakfastChip).join(' ') : '<span class="chip">☕ Frühstück: keine Angabe</span>'}</div>
+        <div style="margin-top:6px;font-size:.88rem"><a href="${stayMapsUrl(g.full)}" target="_blank" rel="noopener">📍 Standort in Google Maps</a></div></div></div>`).join('')}
     </div>`;
-  main.querySelectorAll('.row[data-id]').forEach(el => el.addEventListener('click', () => openDetail(el.dataset.id)));
+}
+function stayMapsUrl(name){
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(String(name).replace(/\(.*?\)/g,'').trim() + ' Australia');
 }
 
 function renderData(){
@@ -581,8 +728,8 @@ function renderData(){
 /* ---------- Wetter (Open-Meteo: kostenlos, ohne Schlüssel) ---------- */
 const WX_KEY = 'wetter-v1';
 const PLACES = [
-  ['Mailand', 45.63, 8.72, /mailand|milano|malpensa/i],
-  ['Brisbane', -27.47, 153.03, /brisbane|clayfield/i],
+  ['Mailand', 45.63, 8.72, /mailand|milano|malpensa|\bmxp\b/i],
+  ['Brisbane', -27.47, 153.03, /brisbane|clayfield|\bbne\b/i],
   ['Noosa', -26.39, 153.09, /noosa|tewantin/i],
   ['Hervey Bay', -25.29, 152.84, /hervey|beachside motor inn/i],
   ["K'gari", -25.24, 153.13, /k.?gari|fraser island/i],
@@ -593,10 +740,10 @@ const PLACES = [
   ['Atherton', -17.27, 145.48, /atherton|altherton/i],
   ['Kuranda', -16.82, 145.64, /kuranda/i],
   ['Port Douglas', -16.48, 145.46, /port douglas/i],
-  ['Cairns', -16.92, 145.77, /cairns|esplanade/i],
+  ['Cairns', -16.92, 145.77, /cairns|esplanade|\bcns\b/i],
   ['Kings Canyon', -24.25, 131.57, /kings canyon/i],
-  ['Uluru', -25.24, 130.99, /uluru|ayers|yulara|outback lodge|kata tjuta/i],
-  ['Sydney', -33.87, 151.21, /sydney/i],
+  ['Uluru', -25.24, 130.99, /uluru|ayers|yulara|outback lodge|kata tjuta|\bayq\b/i],
+  ['Sydney', -33.87, 151.21, /sydney|\bsyd\b/i],
 ];
 let wx = (() => { try { return JSON.parse(localStorage.getItem(WX_KEY)) || {}; } catch(e){ return {}; } })();
 wx.data = wx.data || {}; wx.geo = wx.geo || {};
@@ -876,7 +1023,7 @@ function renderSights(){
     </div>
     ${groups.map(g => {
       const items = state.sights.filter(s => s.wo === g.key);
-      return `<div class="card grp"><h2><span>${esc(groupTitle(g))}</span><small>${esc(groupSub(g))}</small></h2>
+      return `<div class="card grp" data-group="${esc(g.key)}"><h2><span>${esc(groupTitle(g))}</span><small>${esc(groupSub(g))}</small></h2>
         ${items.map(sightHTML).join('')}
         <button class="addlink" data-add="${esc(g.key)}">+ hinzufügen</button></div>`;
     }).join('')}`;
@@ -923,9 +1070,9 @@ function openSightEdit(id, presetWo){
 function openDetail(id){
   const d = state.days.find(x => x.id === id); if (!d) return;
   $('#dlgTitle').textContent = fmtLong(d.datum);
-  const rows = FIELDS.filter(([k]) => k !== 'datum' && d[k]).map(([k,label]) => {
-    let v = d[k]; if (k==='fahrzeit') v += ' h'; if (k==='km') v += ' km'; if (k==='besuch') v += ' h';
-    return `<dt>${esc(label)}</dt><dd>${['was','bemerkungen','zusatz','pendenzen','notizen'].includes(k) ? richText(v, true) : esc(v)}</dd>`;
+  const rows = FIELDS.filter(([k]) => k !== 'datum' && k !== 'fruehstueck' && d[k]).map(([k,label]) => {
+    let v = d[k]; if (k === 'status' && flightsOf(d).length) label = 'Flug'; if (k==='fahrzeit') v += ' h'; if (k==='km') v += ' km'; if (k==='besuch') v += ' h';
+    return `<dt>${esc(label)}</dt><dd>${['was','bemerkungen','zusatz','pendenzen','notizen'].includes(k) ? richText(v, true, d) : esc(v)}</dd>`;
   }).join('');
   const flHint = flightsOf(d).length ? '<p class="hint" style="margin-top:14px">✈ «Status» zeigt live Abflugzeit, Verspätung, Terminal und Gate (Gate meist erst 1–2 h vor Abflug). «Radar» zeigt, wo das Flugzeug gerade ist.</p>' : '';
   const pl = placeOf(d), fc = forecastFor(d);
@@ -935,12 +1082,16 @@ function openDetail(id){
   const route = routeOf(d), sights = sightsForDay(d);
   const sightBox = (pl || route) ? `<div style="margin-top:16px"><dt style="font-size:.78rem;font-weight:600;color:var(--muted)">Sehenswürdigkeiten${route ? ' (inkl. unterwegs ' + esc(route) + ')' : ''}</dt>
       ${sights.map(sightHTML).join('') || '<p class="hint" style="margin:4px 0">Noch keine erfasst.</p>'}
-      <button class="addlink" data-add="${esc(pl && pl.name !== 'Mailand' ? pl.name : route || '')}">+ Sehenswürdigkeit</button></div>` : '';
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <button class="addlink" data-add="${esc(pl && pl.name !== 'Mailand' ? pl.name : route || '')}">+ Sehenswürdigkeit</button>
+        <button class="addlink" data-goto="${esc(pl && pl.name !== 'Mailand' ? pl.name : route || '')}">Zum Bereich Sehenswert ›</button></div></div>` : '';
   $('#dlgBody').innerHTML = `${wxBox}<dl class="detail">${rows || '<p class="hint">Keine Angaben.</p>'}</dl>${flHint}${sightBox}
     ${d.unterkunft ? `<p style="margin-top:14px"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.unterkunft.replace(/\(.*?\)/g,'') + ' Australia')}" target="_blank" rel="noopener">📍 Unterkunft in Google Maps öffnen</a></p>` : ''}
     <div class="actions"><button class="btn secondary" data-close>Schliessen</button><button class="btn" id="editBtn">Bearbeiten</button></div>`;
   $('#editBtn').addEventListener('click', () => openEdit(id));
   bindSightEvents($('#dlgBody'), () => { openDetail(id); render(); });
+  $('#dlgBody').querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => gotoSights(b.dataset.goto)));
+  bindFlightUpd($('#dlgBody'), true);
   const dlg = $('#dlg'); if (!dlg.open) dlg.showModal();
 }
 function openEdit(id){
@@ -983,8 +1134,109 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); inst
 document.addEventListener('visibilitychange', () => { if (!document.hidden){ render(); refreshWeather(false); } });
 window.addEventListener('online', () => refreshWeather(false));
 
+/* ---------- Startbildschirm: Karte mit Reiseroute ---------- */
+const MAP = { K:0.8910065241883679, sx:9.68914737526067, LON_MIN:112.5, LAT_MAX:-10.3 };
+const proj = (lat, lon) => [ (lon - MAP.LON_MIN) * MAP.K * MAP.sx, (MAP.LAT_MAX - lat) * MAP.sx ];
+const placeXY = (name) => { const p = PLACES.find(x => x[0] === name); return p ? proj(p[1], p[2]) : null; };
+const SHORT = { 'Airlie Beach (Whitsundays)':'Airlie Beach', "K'gari":"K'gari" };
+// Beschriftung: an der Ostküste links (Richtung Landesinnere), sonst passend daneben
+const LABEL_POS = { 'Kings Canyon':['end',-6,-5], 'Uluru':['start',6,10], 'Sydney':['end',-6,4], 'Brisbane':['end',-6,11], 'Noosa':['end',-6,4], 'Hervey Bay':['end',-6,-4], 'Cairns':['end',-6,-2], 'Magnetic Island':['end',-6,2], 'Airlie Beach (Whitsundays)':['end',-6,6], 'Townsville':['end',-6,4] };
+function buildJourney(){
+  const segs = []; let cur = null;
+  state.days.forEach(d => {
+    const route = routeOf(d); let drove = false;
+    const addCar = () => { const [a, b] = route.split(' → '); segs.push({ type:'car', from:a, to:b, datum:d.datum }); cur = b; drove = true; };
+    String(d.was || '').split('\n').forEach(line => {
+      // nur echte Flüge – nicht «Rundflug» oder «Tagesausflug»
+      if (/(^|[^a-zäöü])(flug|flight)\b/i.test(line)){
+        const ps = placesIn(line);
+        if (ps.length >= 2){ segs.push({ type:'fly', from:ps[0], to:ps[ps.length-1], datum:d.datum }); cur = ps[ps.length-1]; }
+        else if (ps.length === 1){
+          const p = ps[0];
+          if (!cur){ segs.push({ type:'in', to:p, datum:d.datum }); cur = p; }
+          else if (p === cur) segs.push({ type:'out', from:p, datum:d.datum });
+          else { segs.push({ type:'fly', from:cur, to:p, datum:d.datum }); cur = p; }
+        }
+      } else if (route && !drove && /fahrt/i.test(line)) addCar();
+    });
+    if (route && !drove) addCar();
+    if (!cur){ const p = placeOf(d); if (p && p.name !== 'Mailand' && placeXY(p.name)) cur = p.name; }
+  });
+  return segs.filter(s => (!s.from || placeXY(s.from)) && (!s.to || placeXY(s.to)));
+}
+function showSplash(){
+  if (!state.days.length) return;
+  const segs = buildJourney(); if (!segs.length) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const segG = $('#spSegs'), pinG = $('#spPins'), defs = $('#spMap defs');
+  // Pfade berechnen
+  const paths = segs.map(s => {
+    let a = s.from ? placeXY(s.from) : null, b = s.to ? placeXY(s.to) : null;
+    if (s.type === 'in') a = [b[0] - 30, -22];            // Ankunft aus Asien (von Norden)
+    if (s.type === 'out') b = [a[0] - 190, -22];          // Abflug Richtung Singapur (Nordwesten)
+    let d, len = Math.hypot(b[0]-a[0], b[1]-a[1]);
+    if (s.type === 'car') d = `M${a[0]},${a[1]}L${b[0]},${b[1]}`;
+    else { // Flug als Bogen
+      const mx = (a[0]+b[0])/2, my = (a[1]+b[1])/2, nx = -(b[1]-a[1]), ny = b[0]-a[0], k = 0.18;
+      d = `M${a[0]},${a[1]}Q${mx + nx*k},${my + ny*k} ${b[0]},${b[1]}`; len *= 1.05;
+    }
+    return { s, d, len, a, b };
+  });
+  const DRAW = 7.2, START = 0.6;
+  const total = paths.reduce((t, p) => t + Math.max(p.len, 22), 0);
+  let t = START; const pinsAt = {}; const legTimers = [];
+  const nm = (n) => SHORT[n] || n;
+  const legText = (s) => (s.datum ? fmtRange([s.datum]) + ' · ' : '') + (s.type === 'car' ? '🚗 ' + nm(s.from) + ' → ' + nm(s.to) : s.type === 'in' ? '✈ Ankunft in ' + nm(s.to) : s.type === 'out' ? '✈ Heimflug ab ' + nm(s.from) : '✈ ' + nm(s.from) + ' → ' + nm(s.to));
+  const pin = (name, at) => { if (!name || name in pinsAt) return; pinsAt[name] = at; };
+  paths.forEach((p, i) => {
+    const dur = DRAW * Math.max(p.len, 22) / total;
+    if (p.s.from) pin(p.s.from, t);
+    if (p.s.type === 'car'){
+      const cs = document.createElementNS(NS, 'path');
+      cs.setAttribute('d', p.d); cs.setAttribute('pathLength', '1'); cs.setAttribute('class', 'seg casing');
+      cs.style.setProperty('--dur', dur + 's'); cs.style.setProperty('--del', t + 's'); segG.appendChild(cs);
+      const el = document.createElementNS(NS, 'path');
+      el.setAttribute('d', p.d); el.setAttribute('pathLength', '1'); el.setAttribute('class', 'seg car');
+      el.style.setProperty('--dur', dur + 's'); el.style.setProperty('--del', t + 's'); segG.appendChild(el);
+    } else {
+      // gestrichelte Linie, die mit einer Maske «gezeichnet» wird
+      const m = document.createElementNS(NS, 'mask'); m.setAttribute('id', 'spm' + i); m.setAttribute('maskUnits', 'userSpaceOnUse');
+      const mp = document.createElementNS(NS, 'path');
+      mp.setAttribute('d', p.d); mp.setAttribute('pathLength', '1'); mp.setAttribute('class', 'seg');
+      mp.setAttribute('stroke', '#fff'); mp.setAttribute('stroke-width', '6');
+      mp.style.setProperty('--dur', dur + 's'); mp.style.setProperty('--del', t + 's');
+      m.appendChild(mp); defs.appendChild(m);
+      const el = document.createElementNS(NS, 'path');
+      el.setAttribute('d', p.d); el.setAttribute('class', 'fly'); el.setAttribute('mask', `url(#spm${i})`); segG.appendChild(el);
+    }
+    legTimers.push(setTimeout(() => { $('#spLeg').textContent = legText(p.s); }, t * 1000));
+    t += dur;
+    if (p.s.to) pin(p.s.to, t);
+  });
+  Object.entries(pinsAt).forEach(([name, at]) => {
+    const [x, y] = placeXY(name); const lp = LABEL_POS[name] || ['end', -6, 3];
+    const g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'pin'); g.style.setProperty('--del', at + 's');
+    g.innerHTML = `<circle cx="${x}" cy="${y}" r="3"/><text x="${x + lp[1]}" y="${y + lp[2]}" text-anchor="${lp[0]}">${esc(SHORT[name] || name)}</text>`;
+    pinG.appendChild(g);
+  });
+  // Titel und Kennzahlen
+  const dated = state.days.filter(d => d.datum);
+  const km = state.days.reduce((s, d) => s + (Number(d.km) || 0), 0);
+  const nFl = state.days.reduce((s, d) => s + flightsOf(d).length, 0);
+  $('#spTitle').textContent = state.title || 'Australien';
+  $('#spSub').textContent = (dated.length ? fmtRange([dated[0].datum, dated[dated.length-1].datum]) + ' · ' + (dayDiff(dated[0].datum, dated[dated.length-1].datum) + 1) + ' Tage · ' : '')
+    + km.toLocaleString('de-CH') + ' km Auto · ' + nFl + ' Flüge';
+  const sp = $('#splash'); sp.style.setProperty('--total', '10s'); sp.classList.remove('hidden');
+  let closed = false;
+  legTimers.push(setTimeout(() => { $('#spLeg').textContent = 'Gute Reise! 🦘'; }, (t + 0.4) * 1000));
+  const close = () => { if (closed) return; closed = true; legTimers.forEach(clearTimeout); sp.classList.add('out'); setTimeout(() => { sp.classList.add('hidden'); segG.innerHTML = ''; pinG.innerHTML = ''; }, 650); };
+  $('#spSkip').addEventListener('click', close);
+  setTimeout(close, 10000);
+}
+
 render();
 if (tab === 'plan') setTimeout(scrollToday, 50);
+showSplash();
 refreshWeather(false);
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
