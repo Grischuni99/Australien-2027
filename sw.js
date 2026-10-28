@@ -1,6 +1,6 @@
 // Service Worker: speichert die App-Dateien, damit sie offline läuft.
 // Bei einer neuen App-Version die Nummer erhöhen.
-const CACHE = 'australien-app-v2';
+const CACHE = 'australien-app-v4';
 const FILES = [
   './',
   './index.html',

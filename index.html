@@ -51,6 +51,12 @@
   .chip.ok{background:var(--green-soft);color:var(--green)}
   .chip.todo{background:var(--warn-soft);color:var(--warn)}
   .chip.car{background:var(--ochre-soft);color:var(--ochre)}
+  a.chip.flight{background:var(--deep);color:#fff;text-decoration:none;font-weight:600}
+  .flights{margin-top:16px;padding:12px;border-radius:12px;background:#EEF3F2;border:1px solid #D3E0DE}
+  .flights h4{margin:0 0 4px;font-size:.95rem}
+  .flight-row{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+  .flight-row b{min-width:64px}
+  .flight-row a{flex:1;text-align:center;text-decoration:none;padding:9px 10px;font-size:.88rem}
   .stay{font-size:.88rem;color:var(--muted);margin-top:6px}
   .today-label{font-size:.7rem;font-weight:700;color:var(--ochre);text-transform:uppercase;letter-spacing:.05em}
 
@@ -183,6 +189,29 @@ function dayDiff(a,b){ return Math.round((parseISO(b)-parseISO(a))/86400000); }
 function fmtLong(iso){ if(!iso) return 'Ohne Datum'; const d=parseISO(iso); return WD[d.getDay()]+', '+d.getDate()+'. '+MON[d.getMonth()]+' '+d.getFullYear(); }
 function sortDays(){ state.days.sort((a,b)=> (a.datum||'9999') < (b.datum||'9999') ? -1 : (a.datum||'9999') > (b.datum||'9999') ? 1 : 0); }
 function firstLine(s){ return String(s||'').split('\n')[0]; }
+
+/* ---------- Flüge: Flugnummern erkennen und Live-Status verlinken ---------- */
+function flightsOf(d){
+  const text = ['was','bemerkungen','zusatz','pendenzen','notizen'].map(k => d[k] || '').join('\n');
+  const re = /\b([A-Z]{2}|[A-Z]\d|\d[A-Z])\s?(\d{1,4})\b/g;
+  const found = []; let m;
+  while ((m = re.exec(text))){
+    const code = m[1] + m[2];
+    // nur in einem Flug-Kontext: das Wort «Flug»/«Flight» steht in derselben Zeile
+    const line = text.slice(text.lastIndexOf('\n', m.index) + 1, (text.indexOf('\n', m.index) + 1 || text.length + 1) - 1);
+    if (!/flug|flight/i.test(line)) continue;
+    if (!found.includes(code)) found.push(code);
+  }
+  return found;
+}
+// Frühstück als farbiges Etikett: gebucht = grün, nein = grau, sonst (z.B. «zusätzlich») = orange
+function breakfastChip(v){
+  const s = String(v||'').trim(); if (!s) return '';
+  const cls = /gebucht|inkl|ja\b/i.test(s) ? 'ok' : /^nein|^kein/i.test(s) ? '' : 'todo';
+  return `<span class="chip ${cls}">☕ Frühstück: ${esc(s)}</span>`;
+}
+const statusUrl =(f) => 'https://www.google.com/search?q=' + encodeURIComponent(f + ' flight status');
+const radarUrl  = (f) => 'https://www.flightradar24.com/data/flights/' + f.toLowerCase();
 
 // Excel-Seriennummer oder Text -> JJJJ-MM-TT
 function toISO(v){
@@ -378,6 +407,7 @@ function dayCard(d, idx, first){
   if (d.status) chips.push(`<span class="chip ${/gebucht/i.test(d.status)?'ok':''}">${esc(d.status)}</span>`);
   if (d.fahrzeit) chips.push(`<span class="chip">🚗 ${esc(d.fahrzeit)} h</span>`);
   if (d.km) chips.push(`<span class="chip">${esc(d.km)} km</span>`);
+  flightsOf(d).forEach(f => chips.push(`<a class="chip flight" href="${statusUrl(f)}" target="_blank" rel="noopener" data-stop>✈ Status ${esc(f)}</a>`));
   if (d.mietauto) chips.push(`<span class="chip car">Mietauto</span>`);
   const nt = todos().filter(x => x.day === d).length;
   if (nt) chips.push(`<span class="chip todo">${nt} offen</span>`);
@@ -388,7 +418,7 @@ function dayCard(d, idx, first){
       ${d.datum === t ? '<div class="today-label">Heute</div>' : ''}
       <div class="was">${esc(firstLine(d.was) || '(ohne Titel)')}</div>
       ${rest ? `<div class="stay" style="white-space:pre-line">${esc(rest)}</div>` : ''}
-      ${d.unterkunft ? `<div class="stay">🛏 ${esc(d.unterkunft)}</div>` : ''}
+      ${d.unterkunft ? `<div class="stay">🛏 ${esc(d.unterkunft)}</div>${d.fruehstueck ? `<div style="margin-top:4px">${breakfastChip(d.fruehstueck)}</div>` : ''}` : ''}
       ${chips.length ? `<div class="meta">${chips.join('')}</div>` : ''}
     </div>
   </div>`;
@@ -409,7 +439,7 @@ function renderPlan(){
   const qi = $('#q'); qi.addEventListener('input', () => { query = qi.value; const pos = qi.selectionStart; renderPlan(); const n=$('#q'); n.focus(); n.setSelectionRange(pos,pos); });
   $('#addDay').addEventListener('click', () => openEdit(null));
   if (hasToday) $('#goToday').addEventListener('click', scrollToday);
-  main.querySelectorAll('.day').forEach(el => el.addEventListener('click', () => openDetail(el.dataset.id)));
+  main.querySelectorAll('.day').forEach(el => el.addEventListener('click', (e) => { if (e.target.closest('[data-stop]')) return; openDetail(el.dataset.id); }));
 }
 function scrollToday(){ const el = document.querySelector('.day.today'); if (el) el.scrollIntoView({ behavior:'smooth', block:'center' }); }
 
@@ -434,7 +464,9 @@ function renderStays(){
     const key = name.toLowerCase().slice(0,22);
     const g = groups[groups.length-1];
     if (g && g.key === key) { g.nights++; g.last = d; if (d.unterkunft.length > g.name.length) g.full = d.unterkunft; }
-    else groups.push({ key, name, full:d.unterkunft, first:d, last:d, nights:1, fr:d.fruehstueck });
+    else groups.push({ key, name, full:d.unterkunft, first:d, last:d, nights:1, fr:[] });
+    const cur = groups[groups.length-1];
+    if (d.fruehstueck && !cur.fr.includes(d.fruehstueck)) cur.fr.push(d.fruehstueck);
   });
   const km = state.days.reduce((s,d) => s + (Number(d.km) || 0), 0);
   const drive = state.days.reduce((s,d) => s + driveMinutes(d.fahrzeit), 0);
@@ -446,7 +478,8 @@ function renderStays(){
     </div>
     <div class="card"><h2>Unterkünfte</h2>
       ${groups.map(g => `<div class="row" data-id="${g.first.id}"><div><div class="l">${esc(g.full)}</div>
-        <div class="hint">${esc(fmtLong(g.first.datum))}${g.fr ? ' · Frühstück: ' + esc(g.fr) : ''}</div></div>
+        <div class="hint">${esc(fmtLong(g.first.datum))}</div>
+        <div style="margin-top:4px">${g.fr.length ? g.fr.map(breakfastChip).join(' ') : '<span class="chip">☕ Frühstück: keine Angabe</span>'}</div></div>
         <div class="r">${g.nights} ${g.nights===1?'Nacht':'Nächte'}</div></div>`).join('')}
     </div>`;
   main.querySelectorAll('.row[data-id]').forEach(el => el.addEventListener('click', () => openDetail(el.dataset.id)));
@@ -494,7 +527,14 @@ function openDetail(id){
     let v = d[k]; if (k==='fahrzeit') v += ' h'; if (k==='km') v += ' km'; if (k==='besuch') v += ' h';
     return `<dt>${esc(label)}</dt><dd>${esc(v)}</dd>`;
   }).join('');
-  $('#dlgBody').innerHTML = `<dl class="detail">${rows || '<p class="hint">Keine Angaben.</p>'}</dl>
+  const fl = flightsOf(d);
+  const flightBox = fl.length ? `<div class="flights"><h4>✈ Live-Flugstatus</h4>
+    <div class="hint">Abflugzeit, Verspätung, Terminal und Gate – direkt von der Online-Quelle. Das Gate steht meist erst 1–2 h vor Abflug fest. Braucht Internet.</div>
+    ${fl.map(f => `<div class="flight-row"><b>${esc(f)}</b>
+      <a class="btn" href="${statusUrl(f)}" target="_blank" rel="noopener">Status &amp; Gate</a>
+      <a class="btn secondary" href="${radarUrl(f)}" target="_blank" rel="noopener">Flightradar24</a></div>`).join('')}
+  </div>` : '';
+  $('#dlgBody').innerHTML = `${flightBox}<dl class="detail">${rows || '<p class="hint">Keine Angaben.</p>'}</dl>
     ${d.unterkunft ? `<p style="margin-top:14px"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.unterkunft.replace(/\(.*?\)/g,'') + ' Australia')}" target="_blank" rel="noopener">📍 Unterkunft in Google Maps öffnen</a></p>` : ''}
     <div class="actions"><button class="btn secondary" data-close>Schliessen</button><button class="btn" id="editBtn">Bearbeiten</button></div>`;
   $('#editBtn').addEventListener('click', () => openEdit(id));
