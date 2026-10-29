@@ -83,9 +83,6 @@
   .navbtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
   .navbtns .btn{flex:1;text-align:center;text-decoration:none;min-width:140px}
   a.chip.nav{background:var(--deep);color:#fff;text-decoration:none;font-weight:600}
-  .evrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
-  .evrow:first-of-type{border-top:0}
-  .evrow small{color:var(--ochre);font-weight:600}
   .todo-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .done-btn{padding:7px 10px;font-size:.8rem;white-space:nowrap;flex-shrink:0}
   .done-btn:not(.secondary){background:var(--green)}
@@ -748,12 +745,6 @@ function renderData(){
       <button class="btn block" id="exp" ${state.days.length?'':'disabled'}>Herunterladen</button>
       <p class="hint">Die Datei landet im Ordner «Downloads». Zum Weitergeben in WhatsApp: Büroklammer → «Dokument» → Datei «Reiseplan_…xlsx» wählen.</p>
     </div>
-    <div class="card"><h2>📅 Termine in den Kalender</h2>
-      <p>Flüge, Mietauto, Touren und Check-in-Zeiten mit Erinnerung – in der richtigen Zeitzone.</p>
-      <button class="btn block" id="ics" ${state.days.length ? '' : 'disabled'}>Alle als Kalenderdatei (.ics)</button>
-      <details style="margin-top:10px"><summary class="hint" style="cursor:pointer">Einzeln zum Google Kalender hinzufügen (${state.days.length ? buildEvents().length : 0})</summary>
-        ${state.days.length ? buildEvents().map(e => eventRowHTML(e, true)).join('') : ''}</details>
-    </div>
     <div class="card"><h2>Einstellungen</h2>
       <div class="field"><label for="tIn">Titel der Reise</label><input id="tIn" value="${esc(state.title||'')}"></div>
       <p class="hint">Importiert: ${fmt(state.importedAt)}${state.sheet ? ' (Register «' + esc(state.sheet) + '»)' : ''}<br>
@@ -763,7 +754,6 @@ function renderData(){
     <p class="hint" style="text-align:center">Deine Daten werden nur auf diesem Gerät gespeichert und nirgends hochgeladen.</p>`;
   $('#imp').addEventListener('click', () => $('#fileIn').click());
   $('#exp').addEventListener('click', () => { doDownload(); renderData(); });
-  const ib = $('#ics'); if (ib) ib.addEventListener('click', downloadICS);
   $('#tIn').addEventListener('change', (e) => { state.title = e.target.value.trim(); save(); render(); });
   $('#wipe').addEventListener('click', (e) => {
     const b = e.currentTarget;
@@ -1115,29 +1105,11 @@ function openSightEdit(id, presetWo){
 }
 
 /* ======================================================================
-   Zeitzonen, Sonnenauf-/untergang, Navigation, Kalender, «Heute»-Ansicht
+   Zeitzonen, Sonnenauf-/untergang, Navigation, «Heute»-Ansicht
    ====================================================================== */
 const PLACE_TZ = { 'Mailand':'Europe/Rome', 'Kings Canyon':'Australia/Darwin', 'Uluru':'Australia/Darwin', 'Sydney':'Australia/Sydney' };
-const AIRPORT_TZ = { MXP:'Europe/Rome', LIN:'Europe/Rome', ZRH:'Europe/Zurich', TPE:'Asia/Taipei', SIN:'Asia/Singapore',
-  BNE:'Australia/Brisbane', CNS:'Australia/Brisbane', PPP:'Australia/Brisbane', TSV:'Australia/Brisbane', OOL:'Australia/Brisbane', HTI:'Australia/Brisbane',
-  AYQ:'Australia/Darwin', DRW:'Australia/Darwin', ASP:'Australia/Darwin', SYD:'Australia/Sydney', MEL:'Australia/Melbourne', ADL:'Australia/Adelaide', PER:'Australia/Perth' };
 const placeTz = (name) => PLACE_TZ[name] || (name ? 'Australia/Brisbane' : 'Australia/Brisbane');
-// Abweichung einer Zeitzone von UTC (in Minuten) zu einem Zeitpunkt
-function tzOffset(tz, ts){
-  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone:tz, hourCycle:'h23', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' })
-    .formatToParts(ts).filter(x => x.type !== 'literal').map(x => [x.type, +x.value]));
-  return (Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second) - ts) / 60000;
-}
-// Ortszeit (Datum + HH:MM in Zeitzone tz) -> UTC-Zeitstempel
-function localToUTC(iso, hhmm, tz){
-  const [y, m, d] = iso.split('-').map(Number), [h, mi] = hhmm.split(':').map(Number);
-  const guess = Date.UTC(y, m - 1, d, h, mi);
-  let ts = guess - tzOffset(tz, guess) * 60000;
-  ts = guess - tzOffset(tz, ts) * 60000;
-  return ts;
-}
 const fmtTime = (ts, tz) => new Date(ts).toLocaleTimeString('de-CH', { timeZone:tz, hour:'2-digit', minute:'2-digit' });
-const addDays = (iso, n) => { const d = parseISO(iso); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
 
 // Sonnenauf- und -untergang (astronomische Berechnung, funktioniert offline)
 function sunTimes(iso, lat, lon){
@@ -1186,128 +1158,6 @@ function navHTML(d, compact){
     <div class="navbtns"><a class="btn" href="${n.go}" target="_blank" rel="noopener">🧭 Navigation starten</a><a class="btn secondary" href="${n.view}" target="_blank" rel="noopener">🗺 Strecke ansehen</a></div></div>`;
 }
 
-/* ---------- Termine für den Kalender ---------- */
-const MONTHS = { jan:1, feb:2, mär:3, maer:3, mar:3, apr:4, mai:5, jun:6, jul:7, aug:8, sep:9, okt:10, oct:10, nov:11, dez:12, dec:12 };
-function flightEvent(d, line){
-  const codes = flightCodesInLine(line); if (!codes.length) return null;
-  const m = line.match(/Flug\s+([A-Z]{3})\s*[–-]\s*([A-Z]{3})/); if (!m) return null;
-  const code = codes[0], from = m[1], to = m[2];
-  const o = flightOrig(d, code), u = flightUpd(d, code) || {};
-  const dep = u.dep || o.dep, arr = u.arr || o.arr; if (!dep) return null;
-  let depDate = d.datum;
-  const ex = line.match(/beides\s+(\d{1,2})\.\s*([A-Za-zä]+)/);
-  if (ex && MONTHS[ex[2].slice(0,3).toLowerCase()]) depDate = d.datum.slice(0,4) + '-' + String(MONTHS[ex[2].slice(0,3).toLowerCase()]).padStart(2,'0') + '-' + String(ex[1]).padStart(2,'0');
-  const tzF = AIRPORT_TZ[from] || 'UTC', tzT = AIRPORT_TZ[to] || 'UTC';
-  const start = localToUTC(depDate, dep, tzF);
-  let end = start + 2 * 3600e3;
-  if (arr){
-    let arrDate = /\+\s*1\s*Tag/i.test(line) ? addDays(depDate, 1) : depDate;
-    end = localToUTC(arrDate, arr, tzT);
-    if (end <= start) end = localToUTC(addDays(arrDate, 1), arr, tzT);
-  }
-  return { key:'fl|' + depDate + '|' + code, day:d, date:depDate, title:'✈ ' + code + ' ' + from + ' → ' + to, start, end, tz:tzF,
-    location:from, alarm:180, desc:line + (u.dep || u.arr ? '\n(Zeiten aktualisiert)' : '') + '\nLive-Status: ' + statusUrl(code) };
-}
-// Zeitzone eines Termins ohne Flughafen: Ort in der Zeile, sonst vor/nach dem Flug des Tages, sonst Tagesort
-function eventTz(d, line, hhmm){
-  const ps = placesIn(line); if (ps.length) return placeTz(ps[0]);
-  const fl = String(d.was || '').split('\n').map(l => flightEvent(d, l)).filter(Boolean)[0];
-  if (fl){ const m = fl.title.match(/([A-Z]{3}) → ([A-Z]{3})/); const depLocal = fmtTime(fl.start, fl.tz);
-    return AIRPORT_TZ[hhmm >= depLocal ? m[2] : m[1]] || fl.tz; }
-  const p = placeOf(d); return placeTz(p && p.name);
-}
-const hhmmOf = (h, m) => String(h).padStart(2,'0') + ':' + String(m || 0).padStart(2,'0');
-function buildEvents(){
-  const ev = [];
-  state.days.forEach(d => {
-    if (!d.datum) return;
-    const lines = ['was','bemerkungen','zusatz','pendenzen','notizen'].map(k => String(d[k] || '').split('\n')).flat();
-    lines.forEach((line, li) => {
-      const f = flightEvent(d, line); if (f){ ev.push(f); return; }
-      // Mietauto abholen / abgeben
-      const car = line.match(/auto\s+(abholen|abgeben)/i);
-      if (car){
-        const t = line.match(/(\d{1,2}):(\d{2})/) || line.match(/(\d{1,2})\s*Uhr/i);
-        const firm = (line.match(/hertz|europcar|avis|budget|thrifty|sixt|redspot/i) || [''])[0];
-        const title = '🚗 Auto ' + car[1].toLowerCase() + (firm ? ' (' + firm[0].toUpperCase() + firm.slice(1).toLowerCase() + ')' : '');
-        const key = 'car|' + d.datum + '|' + car[1].toLowerCase();
-        if (t){ const hm = hhmmOf(t[1], t[2]); const tz = eventTz(d, line, hm); const start = localToUTC(d.datum, hm, tz);
-          ev.push({ key, day:d, title, start, end:start + 30*60e3, tz, location:(placeOf(d) || {}).name || '', alarm:60, desc:line }); }
-        else ev.push({ key, day:d, title:title + (/abend/i.test(line) ? ' – abends' : ''), allDay:true, location:'', desc:line });
-      }
-      // Touren mit Startzeit, z.B. «Start 07:30 - 16:30»
-      const tour = line.match(/start\s+(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/i);
-      if (tour){
-        const name = line.split(/[(,]/)[0].replace(/^(tagsüber|vm:?|nm:?)\s*/i, '').trim() || 'Tour';
-        const tz = eventTz(d, line, tour[1]);
-        ev.push({ key:'tour|' + d.datum + '|' + li, day:d, title:'🚩 ' + name, start:localToUTC(d.datum, tour[1], tz), end:localToUTC(d.datum, tour[2], tz), tz,
-          location:(placeOf(d) || {}).name || '', alarm:90, desc:line });
-      }
-    });
-  });
-  // Check-in-Zeiten der Unterkünfte (nur erste Nacht)
-  let prevStay = '';
-  state.days.forEach(d => {
-    const name = (d.unterkunft || '').trim(); const short = name.replace(/\(.*?\)/g, '').trim();
-    if (d.datum && short && short.slice(0,20) !== prevStay.slice(0,20)){
-      const ci = name.match(/check-?in[^0-9]*(\d{1,2})(?::(\d{2}))?\s*(uhr)?/i);
-      if (ci){ const hm = hhmmOf(ci[1], ci[2]); const tz = placeTz((placeOf(d) || {}).name); const end = localToUTC(d.datum, hm, tz);
-        ev.push({ key:'ci|' + d.datum, day:d, title:'🛏 Check-in bis ' + hm + ': ' + short, start:end - 3600e3, end, tz, location:short, alarm:120, desc:name }); }
-    }
-    if (short) prevStay = short;
-  });
-  return ev.sort((a, b) => (a.start || localToUTC(a.day.datum, '00:00', 'UTC')) - (b.start || localToUTC(b.day.datum, '00:00', 'UTC')));
-}
-const icsDate = (ts) => new Date(ts).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-const icsEsc = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
-// Zeilen nach max. 75 Bytes umbrechen (RFC 5545), ohne Zeichen zu zerschneiden
-function icsFold(line){
-  const enc = new TextEncoder(), out = []; let cur = '', len = 0;
-  for (const ch of line){ const n = enc.encode(ch).length;
-    if (len + n > (out.length ? 74 : 75)){ out.push(cur); cur = ''; len = 0; }
-    cur += ch; len += n; }
-  out.push(cur); return out.join('\r\n ');
-}
-function buildICS(events){
-  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Australien-App//DE', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:' + icsEsc(state.title || 'Reise')];
-  const stamp = icsDate(Date.now());
-  events.forEach(e => {
-    L.push('BEGIN:VEVENT', 'UID:' + e.key.replace(/[^\w|-]/g, '') .replace(/\|/g, '-') + '@australien-app', 'DTSTAMP:' + stamp);
-    if (e.allDay){ L.push('DTSTART;VALUE=DATE:' + e.day.datum.replace(/-/g, ''), 'DTEND;VALUE=DATE:' + addDays(e.day.datum, 1).replace(/-/g, '')); }
-    else L.push('DTSTART:' + icsDate(e.start), 'DTEND:' + icsDate(e.end));
-    L.push('SUMMARY:' + icsEsc(e.title), 'DESCRIPTION:' + icsEsc(e.desc));
-    if (e.location) L.push('LOCATION:' + icsEsc(e.location));
-    if (e.alarm) L.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEsc(e.title), 'TRIGGER:-PT' + e.alarm + 'M', 'END:VALARM');
-    L.push('END:VEVENT');
-  });
-  L.push('END:VCALENDAR');
-  return L.map(icsFold).join('\r\n') + '\r\n';
-}
-function gcalUrl(e){
-  const dates = e.allDay ? e.day.datum.replace(/-/g, '') + '/' + addDays(e.day.datum, 1).replace(/-/g, '') : icsDate(e.start) + '/' + icsDate(e.end);
-  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(e.title) + '&dates=' + dates +
-    '&details=' + encodeURIComponent(e.desc || '') + (e.location ? '&location=' + encodeURIComponent(e.location) : '');
-}
-function eventTimeLabel(e){
-  if (e.allDay) return 'ganztägig';
-  const s = fmtTime(e.start, e.tz);
-  if (/^✈/.test(e.title)){ const m = e.title.match(/→ ([A-Z]{3})/); const tzT = AIRPORT_TZ[m && m[1]] || e.tz;
-    const sameDay = new Date(e.end).toLocaleDateString('de-CH', { timeZone:tzT }) === new Date(e.start).toLocaleDateString('de-CH', { timeZone:e.tz });
-    return s + ' – ' + fmtTime(e.end, tzT) + (sameDay ? '' : ' (+1)'); }
-  return s + (e.end - e.start > 45*60e3 ? ' – ' + fmtTime(e.end, e.tz) : '');
-}
-function eventRowHTML(e, showDate){
-  const other = e.date && e.date !== e.day.datum;
-  return `<div class="evrow"><div><small>${showDate || other ? esc(fmtLong(e.date || e.day.datum)) + ' · ' : ''}${esc(eventTimeLabel(e))}</small><div>${esc(e.title)}</div></div>
-    <a class="fl alt" href="${gcalUrl(e)}" target="_blank" rel="noopener" data-stop>📅 Kalender</a></div>`;
-}
-function downloadICS(){
-  const blob = new Blob([buildICS(buildEvents())], { type:'text/calendar;charset=utf-8' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Australien-Termine.ics';
-  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-  toast('Kalenderdatei gespeichert (Ordner «Downloads»)');
-}
-
 /* ---------- «Heute»-Ansicht ---------- */
 let planMode = null, heuteId = null;
 function defaultHeute(){
@@ -1329,7 +1179,6 @@ function renderHeute(main, toolbar){
     : '<p class="hint" style="margin:4px 0">Die Wetterprognose erscheint etwa 7 Tage vorher.</p>';
   const todosDay = todos().filter(x => x.day === d);
   const sights = sightsForDay(d);
-  const events = buildEvents().filter(e => e.day === d);
   const rest = ['bemerkungen','zusatz','pendenzen','notizen'].filter(k => d[k]).map(k => `<div class="hint" style="margin-top:6px;white-space:pre-line">${richText(d[k], true, d)}</div>`).join('');
   main.innerHTML = toolbar + `
     <div class="daynav"><button class="btn secondary" id="hPrev" ${i <= 0 ? 'disabled' : ''} aria-label="Vorheriger Tag">‹</button>
@@ -1338,7 +1187,6 @@ function renderHeute(main, toolbar){
     ${pl ? `<div class="card"><h2>Wetter${pl ? ' in ' + esc(SHORT[pl.name] || pl.name) : ''}</h2>${wxPart}${sunHTML(d)}</div>` : ''}
     <div class="card"><h2>Programm</h2><div class="rt" style="font-weight:600">${richText(d.was, true, d) || '–'}</div>${rest}
       ${navHTML(d)}</div>
-    ${events.length ? `<div class="card"><h2>Termine</h2>${events.map(e => eventRowHTML(e, false)).join('')}</div>` : ''}
     ${d.unterkunft ? `<div class="card"><h2>Unterkunft</h2><div class="l"><b>${esc(d.unterkunft)}</b></div>
       ${d.fruehstueck ? `<div style="margin-top:5px">${breakfastChip(d.fruehstueck)}</div>` : ''}
       <div style="margin-top:6px;font-size:.9rem"><a href="${stayMapsUrl(d.unterkunft)}" target="_blank" rel="noopener">📍 Standort in Google Maps</a></div></div>` : ''}
@@ -1382,9 +1230,7 @@ function openDetail(id){
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
         <button class="addlink" data-add="${esc(pl && pl.name !== 'Mailand' ? pl.name : route || '')}">+ Sehenswürdigkeit</button>
         <button class="addlink" data-goto="${esc(pl && pl.name !== 'Mailand' ? pl.name : route || '')}">Zum Bereich Sehenswert ›</button></div></div>` : '';
-  const evs = buildEvents().filter(e => e.day === d);
-  const evBox = evs.length ? `<div style="margin-top:16px"><dt style="font-size:.78rem;font-weight:600;color:var(--muted)">Termine</dt>${evs.map(e => eventRowHTML(e, false)).join('')}</div>` : '';
-  $('#dlgBody').innerHTML = `${wxBox}${sunHTML(d)}<dl class="detail">${rows || '<p class="hint">Keine Angaben.</p>'}</dl>${navHTML(d)}${flHint}${evBox}${sightBox}
+  $('#dlgBody').innerHTML = `${wxBox}${sunHTML(d)}<dl class="detail">${rows || '<p class="hint">Keine Angaben.</p>'}</dl>${navHTML(d)}${flHint}${sightBox}
     ${d.unterkunft ? `<p style="margin-top:14px"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.unterkunft.replace(/\(.*?\)/g,'') + ' Australia')}" target="_blank" rel="noopener">📍 Unterkunft in Google Maps öffnen</a></p>` : ''}
     <div class="actions"><button class="btn secondary" data-close>Schliessen</button><button class="btn" id="editBtn">Bearbeiten</button></div>`;
   $('#editBtn').addEventListener('click', () => openEdit(id));
